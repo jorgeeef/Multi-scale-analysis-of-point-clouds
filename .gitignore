@@ -3,3 +3,17 @@ node_modules/
 dist/
 build/
 .vscode/
+
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+data/
+*.obj
+*.ply
+*.stl
+*.zip
+*.tar
+*.gz
