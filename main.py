@@ -10,7 +10,6 @@
 # Étapes :
 #   Étape 1 — Chargement du modèle 3D
 #   Étape 2 — Préparation géométrique (normales, KD-tree, échelles)
-#   Étape 3 — Fitting GLS et extraction des descripteurs (τ, η, κ, δ)
 # =========================================================
 
 import os
@@ -142,13 +141,6 @@ if __name__ == "__main__":
     bad_mask  = DELTA[:, 0] < 0.3
     good_mask = DELTA[:, 0] > 0.8
     print(f"[DIAG] à t_min : {np.sum(bad_mask)} mauvais, {np.sum(good_mask)} bons")
-
-
-
-
-
-
-    
 
 
 
