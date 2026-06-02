@@ -34,7 +34,7 @@ if __name__ == "__main__":
     vertices, faces, obj_normals = load_obj(path)
     #print(f"[INFO] OBJ normals found: {len(obj_normals)}")
 
-    use_obj_normals = len(obj_normals) == len(vertices) and len(obj_normals) > 0
+    use_obj_normals = len(obj_normals) > 0
 
     # STEP 2 — GEOMETRY PREP
     vertices = clean_point_cloud(vertices) #nettoyage
