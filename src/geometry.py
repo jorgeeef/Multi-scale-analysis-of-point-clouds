@@ -15,14 +15,6 @@ def clean_point_cloud(points):
     Nettoie le nuage de points en supprimant les valeurs invalides.
     Supprime les points contenant des NaN ou des valeurs infinies
     qui pourraient corrompre les calculs géométriques suivants.
- 
-    Paramètres
-    points : array-like, shape (N, 3)
-        Coordonnées brutes des points du nuage.
- 
-    Retourne
-    points : np.ndarray, shape (M, 3)
-        Nuage nettoyé, avec M <= N.
     """
     points = np.asarray(points)
     points = points[~np.isnan(points).any(axis=1)]
