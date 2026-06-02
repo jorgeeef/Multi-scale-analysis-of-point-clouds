@@ -29,7 +29,6 @@ from visualiser_spheres import visualize_sphere_at_point, visualize_sphere_patch
 
 if __name__ == "__main__":
     
-
     #Étape 1 — chargement du modèle 3D 
     path = os.path.join("data", "12140_Skull_v3.obj") # le nom du fichier obj
     vertices, faces, obj_normals = load_obj(path)
