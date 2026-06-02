@@ -32,16 +32,6 @@ def estimate_normals(pcd, k=30):
     cohérente par propagation sur le graphe de voisinage tangent
     (orient_normals_consistent_tangent_plane).
  
-    Paramètres
-    pcd : open3d.geometry.PointCloud
-        Nuage de points Open3D (sans normales).
-    k : int
-        Nombre de voisins utilisés pour l'estimation (défaut : 30).
- 
-    Retourne
-    pcd : open3d.geometry.PointCloud
-        Nuage de points avec normales estimées et orientées.
- 
     Note
     ----
     L'orientation automatique peut échouer dans les zones de forte
