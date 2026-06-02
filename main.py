@@ -35,11 +35,10 @@ if __name__ == "__main__":
     vertices, faces, obj_normals = load_obj(path)
     #print(f"[INFO] OBJ normals found: {len(obj_normals)}")
 
-
     # STEP 2 — GEOMETRY PREP
     vertices = clean_point_cloud(vertices) #nettoyage
     pcd = create_point_cloud(vertices) 
-    if len(obj_normals) == len(vertices):
+    if len(obj_normals) != 0:
 
         pcd_obj = create_point_cloud_with_normals(
             vertices,
@@ -52,6 +51,8 @@ if __name__ == "__main__":
             [pcd_obj],
             point_show_normal=True
         )
+    else:
+        print("[VISU] Normales estimated")
     pcd = estimate_normals(pcd)
 
     print_stats(vertices, faces, pcd)
