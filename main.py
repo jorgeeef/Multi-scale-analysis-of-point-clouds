@@ -39,13 +39,11 @@ if __name__ == "__main__":
     vertices = clean_point_cloud(vertices) #nettoyage
     pcd = create_point_cloud(vertices) 
     if len(obj_normals) != 0:
-
+        print("[VISU] Normales du fichier OBJ")
         pcd_obj = create_point_cloud_with_normals(
             vertices,
             obj_normals
         )
-
-        print("[VISU] Normales du fichier OBJ")
 
         o3d.visualization.draw_geometries(
             [pcd_obj],
@@ -53,6 +51,7 @@ if __name__ == "__main__":
         )
     else:
         print("[VISU] Normales estimated")
+    
     pcd = estimate_normals(pcd)
 
     print_stats(vertices, faces, pcd)
