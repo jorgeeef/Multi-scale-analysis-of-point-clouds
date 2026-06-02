@@ -55,13 +55,6 @@ def build_kdtree(points):
     en O(log N) au lieu de O(N), ce qui est essentiel pour les
     voisinages multi-échelle sur des nuages de grande taille.
  
-    Paramètres
-    points : np.ndarray, shape (N, 3)
-        Coordonnées des points du nuage.
- 
-    Retourne
-    tree : scipy.spatial.cKDTree
-        Structure KD-tree prête pour les requêtes spatiales.
     """
     return cKDTree(points)
 

@@ -1,16 +1,15 @@
 
 # main.py
-# =========================================================
-# PIPELINE PRINCIPAL — ANALYSE MULTI-ÉCHELLE GLS
+# =================================================================
+# PIPELINE PRINCIPAL — ANALYSE MULTI-ÉCHELLE 
 #
-# Ce script orchestre le pipeline complet de l'analyse GLS
-# (Growing Least Squares) de Mellado sur un
-# nuage de points 3D chargé depuis un fichier .obj.
+# Ce script orchestre le pipeline complet de l'analyse de 
+# Mellado sur un nuage de points 3D chargé depuis un fichier .obj.
 #
-# Étapes :
+#   Étapes :
 #   Étape 1 — Chargement du modèle 3D
 #   Étape 2 — Préparation géométrique (normales, KD-tree, échelles)
-# =========================================================
+# =================================================================
 
 import os
 import sys
@@ -32,10 +31,9 @@ if __name__ == "__main__":
     
 
     #Étape 1 — chargement du modèle 3D 
-    path = os.path.join("data", "12140_Skull_v3.obj") # Name of the file
+    path = os.path.join("data", "12140_Skull_v3.obj") # le nom du fichier obj
     vertices, faces, obj_normals = load_obj(path)
     print(f"[INFO] OBJ normals found: {len(obj_normals)}")
-    pcd = create_point_cloud(vertices)
 
 
     # STEP 2 — GEOMETRY PREP
