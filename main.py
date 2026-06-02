@@ -33,11 +33,11 @@ if __name__ == "__main__":
     #Étape 1 — chargement du modèle 3D 
     path = os.path.join("data", "12140_Skull_v3.obj") # le nom du fichier obj
     vertices, faces, obj_normals = load_obj(path)
-    print(f"[INFO] OBJ normals found: {len(obj_normals)}")
+    #print(f"[INFO] OBJ normals found: {len(obj_normals)}")
 
 
     # STEP 2 — GEOMETRY PREP
-    vertices = clean_point_cloud(vertices)
+    vertices = clean_point_cloud(vertices) #nettoyage
     pcd = create_point_cloud(vertices) 
     if len(obj_normals) == len(vertices):
 

@@ -31,6 +31,8 @@ def load_obj(filepath):
 # vertices → NumPy array (efficient math)
 # faces → list of triangles
 
+
+# CREATE POINT CLOUD: Convert raw vertices into Open3D structure
 def create_point_cloud_with_normals(points, normals):
     pcd = o3d.geometry.PointCloud()
 
@@ -40,7 +42,6 @@ def create_point_cloud_with_normals(points, normals):
     return pcd
 
 
-# CREATE POINT CLOUD: Convert raw vertices into Open3D structure
 def create_point_cloud(points):
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
