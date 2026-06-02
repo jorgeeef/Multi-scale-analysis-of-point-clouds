@@ -34,24 +34,31 @@ if __name__ == "__main__":
     vertices, faces, obj_normals = load_obj(path)
     #print(f"[INFO] OBJ normals found: {len(obj_normals)}")
 
+    use_obj_normals = len(obj_normals) == len(vertices) and len(obj_normals) > 0
+
     # STEP 2 — GEOMETRY PREP
     vertices = clean_point_cloud(vertices) #nettoyage
-    pcd = create_point_cloud(vertices) 
-    if len(obj_normals) != 0:
+
+    if use_obj_normals:
         print("[VISU] Normales du fichier OBJ")
-        pcd_obj = create_point_cloud_with_normals(
+        pcd = create_point_cloud_with_normals(
             vertices,
             obj_normals
         )
 
         o3d.visualization.draw_geometries(
-            [pcd_obj],
+            [pcd],
             point_show_normal=True
         )
     else:
         print("[VISU] Normales estimated")
+        pcd = create_point_cloud(vertices)
+        pcd = estimate_normals(pcd)
+        o3d.visualization.draw_geometries(
+            [pcd],
+            point_show_normal=True
+        )
     
-    pcd = estimate_normals(pcd)
 
     print_stats(vertices, faces, pcd)
 
