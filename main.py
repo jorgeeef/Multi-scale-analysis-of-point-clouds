@@ -20,7 +20,7 @@ import numpy as np
 import open3d as o3d
 
 
-from obj_reader import load_obj, create_point_cloud, visualize, print_stats
+from obj_reader import load_obj, create_point_cloud, create_point_cloud_with_normals, visualize, print_stats
 from geometry import clean_point_cloud, estimate_normals, build_kdtree, knn_neighbors, multi_scale_neighbors, estimate_mean_spacing, build_scales_from_spacing, compute_validity_mask
 from gls import fit_algebraic_sphere, extract_descriptors, gaussian_weights, compute_fitness
 from visualiser_spheres import visualize_sphere_at_point, visualize_sphere_patch
@@ -33,13 +33,27 @@ if __name__ == "__main__":
 
     #Étape 1 — chargement du modèle 3D 
     path = os.path.join("data", "12140_Skull_v3.obj") # Name of the file
-    vertices, faces = load_obj(path)
+    vertices, faces, obj_normals = load_obj(path)
+    print(f"[INFO] OBJ normals found: {len(obj_normals)}")
     pcd = create_point_cloud(vertices)
 
 
     # STEP 2 — GEOMETRY PREP
     vertices = clean_point_cloud(vertices)
     pcd = create_point_cloud(vertices) 
+    if len(obj_normals) == len(vertices):
+
+        pcd_obj = create_point_cloud_with_normals(
+            vertices,
+            obj_normals
+        )
+
+        print("[VISU] Normales du fichier OBJ")
+
+        o3d.visualization.draw_geometries(
+            [pcd_obj],
+            point_show_normal=True
+        )
     pcd = estimate_normals(pcd)
 
     print_stats(vertices, faces, pcd)
