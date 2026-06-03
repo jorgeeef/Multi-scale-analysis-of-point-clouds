@@ -21,30 +21,6 @@ def clean_point_cloud(points):
     return points
 
 
-# Estimation des normales
-def estimate_normals(pcd, k=30):
-    """
-    Estime les normales du nuage de points par la méthode k-NN,
-    puis oriente les normales de façon cohérente globalement.
- 
-    L'estimation utilise une ACP locale sur les k plus proches
-    voisins de chaque point. L'orientation est ensuite rendue
-    cohérente par propagation sur le graphe de voisinage tangent
-    (orient_normals_consistent_tangent_plane).
- 
-    Note
-    ----
-    L'orientation automatique peut échouer dans les zones de forte
-    concavité (orbites, mâchoire) ou aux bords ouverts du modèle.
-    Ces zones seront identifiées par le paramètre DELTA lors du fitting GLS.
-    """
-
-    pcd.estimate_normals(
-        search_param=o3d.geometry.KDTreeSearchParamKNN(knn=k)
-    )
-    pcd.orient_normals_consistent_tangent_plane(k=k)
-    return pcd
-
 
 # Construction du kd-tree
 def build_kdtree(points):
@@ -233,3 +209,43 @@ def compute_validity_mask(neighborhoods, min_neighbors=6):
     for t, neighbors in neighborhoods.items():
         masks[t] = np.array([len(n) >= min_neighbors for n in neighbors])
     return masks
+
+def print_scale_stats(neighborhoods_dict, scales, masks_dict):
+    """
+    Affiche pour chaque échelle t :
+      - le rayon t
+      - le nombre moyen de voisins par point (tous points confondus)
+      - le nombre moyen de voisins sur les points valides uniquement
+      - le nombre de points valides / total
+
+    Paramètres
+    ----------
+    neighborhoods_dict : dict {float: list of lists}
+    scales             : list of float
+    masks_dict         : dict {float: np.ndarray of bool}
+    """
+    n_points = len(next(iter(neighborhoods_dict.values())))
+
+    print("\n========== MULTI-SCALE NEIGHBORHOODS ==========")
+    print(f"{'t':>10}  {'moy. voisins':>14}  {'moy. (valides)':>16}  {'valides':>10}")
+    print("-" * 58)
+
+    for t in scales:
+        neighbors = neighborhoods_dict[t]
+        mask      = masks_dict[t]
+
+        sizes_all   = np.array([len(n) for n in neighbors])
+        sizes_valid = sizes_all[mask]
+
+        mean_all   = np.mean(sizes_all)
+        mean_valid = np.mean(sizes_valid) if len(sizes_valid) > 0 else 0.0
+        n_valid    = np.sum(mask)
+
+        print(
+            f"  t={t:8.4f}"
+            f"  {mean_all:>12.1f}"
+            f"  {mean_valid:>14.1f}"
+            f"  {n_valid:>6}/{n_points}"
+        )
+
+    print("=" * 58 + "\n")
