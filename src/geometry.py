@@ -1,6 +1,6 @@
 # src/geomety.py
 # =========================================================
-# Module de préparation géométrique:
+# Préparation géométrique:
 # Ce module fournit toutes les fonctions nécessaires à la
 # préparation du nuage de points avant l'analyse GLS 
 # =========================================================
@@ -41,16 +41,9 @@ def knn_neighbors(tree, points, k=30):
     Calcule les k plus proches voisins pour chaque point du nuage.
  
     Paramètres
-    tree : scipy.spatial.cKDTree
-        KD-tree construit sur le nuage de points.
-    points : np.ndarray, shape (N, 3)
-        Coordonnées des points pour lesquels on cherche les voisins.
-    k : int
-        Nombre de voisins à retourner (défaut : 30).
- 
-    Retourne
-    idx : np.ndarray, shape (N, k)
-        Indices des k plus proches voisins pour chaque point.
+    tree : KD-tree construit sur le nuage de points.
+    points : Coordonnées des points pour lesquels on cherche les voisins.
+    k : Nombre de voisins à retourner (défaut : 30).
     """
     _, idx = tree.query(points, k=k)
     return idx
@@ -66,16 +59,12 @@ def radius_neighbors(tree, points, radius):
     dans la formulation GLS de Mellado
  
     Paramètres
-    tree : scipy.spatial.cKDTree
-        KD-tree construit sur le nuage de points.
-    points : np.ndarray, shape (N, 3)
-        Coordonnées des points du nuage.
-    radius : float
-        Rayon de recherche (échelle t dans la notation GLS).
+    tree : KD-tree construit sur le nuage de points.
+    points : Coordonnées des points du nuage.
+    radius : Rayon de recherche (échelle t dans la notation GLS).
  
     Retourne
-    neighbors : list of lists
-        neighbors[i] contient les indices des voisins du point i
+    neighbors : neighbors[i] contient les indices des voisins du point i
         dans la boule de rayon `radius`.
     """
     neighbors = []
@@ -95,14 +84,11 @@ def multi_scale_neighbors(points, scales):
     indexé par l'échelle, prêt pour la boucle de fitting GLS.
  
     Paramètres
-    points : np.ndarray, shape (N, 3)
-        Coordonnées des points du nuage.
-    scales : list of float
-        Liste des rayons d'échelle [t_1, t_2, ..., t_S].
+    points : Coordonnées des points du nuage.
+    scales : Liste des rayons d'échelle [t_1, t_2, ..., t_S].
  
     Retourne
-    all_neighbors : dict {float: list of lists}
-        all_neighbors[t][i] = liste des indices voisins du point i
+    all_neighbors[t][i] = liste des indices voisins du point i
         à l'échelle t.
     """
     tree = build_kdtree(points)
@@ -123,15 +109,12 @@ def estimate_mean_spacing(points, k=2):
     réelle du nuage.
  
     Paramètres
-    points : np.ndarray, shape (N, 3)
-        Coordonnées des points du nuage.
-    k : int
-        k=2 car le plus proche voisin d'un point est lui-même
+    points : Coordonnées des points du nuage.
+    k : k=2 car le plus proche voisin d'un point est lui-même
         (distance 0) ; on prend donc le 2ème plus proche (défaut : 2).
  
     Retourne
-    spacing : float
-        Distance moyenne au plus proche voisin réel.
+    spacing : Distance moyenne au plus proche voisin réel.
     """
     tree = cKDTree(points)
     dists, _ = tree.query(points, k=k)
@@ -154,21 +137,16 @@ def build_scales_from_spacing(spacing, n_scales=15, factor_min=2, factor_max=20,
     l'analyse multi-échelle de Mellado et al. (2012).
  
     Paramètres
-    spacing : float
-        Espacement moyen entre points voisins.
-    n_scales : int
-        Nombre d'échelles à générer (défaut : 12).
-    factor_min : float
-        Multiplicateur minimum (défaut : 5, soit t_min ≈ 5 * spacing).
-    factor_max : float
-        Multiplicateur maximum (défaut : 15).
-    mode : str
+    spacing : Espacement moyen entre points voisins.
+    n_scales : Nombre d'échelles à générer (défaut : 12).
+    factor_min : Multiplicateur minimum (défaut : 5, soit t_min ≈ 5 * spacing).
+    factor_max : Multiplicateur maximum (défaut : 15).
+    mode : 
         "log" pour distribution logarithmique (recommandé),
         "linear" pour distribution linéaire uniforme.
  
     Retourne
-    scales : np.ndarray, shape (n_scales,)
-        Tableau des rayons d'échelle triés par ordre croissant.
+    scales : Tableau des rayons d'échelle triés par ordre croissant.
     """
     if mode == "linear":
         scales = np.linspace(factor_min * spacing, 
@@ -195,14 +173,11 @@ def compute_validity_mask(neighborhoods, min_neighbors=6):
     boucle de fitting GLS.
  
     Paramètres
-    neighborhoods : dict {float: list of lists}
-        Voisinages multi-échelle retournés par multi_scale_neighbors.
-    min_neighbors : int
-        Seuil minimum de voisins pour qu'un fitting soit fiable (défaut : 6).
+    neighborhoods : Voisinages multi-échelle retournés par multi_scale_neighbors.
+    min_neighbors : Seuil minimum de voisins pour qu'un fitting soit fiable (défaut : 6).
  
     Retourne
-    masks : dict {float: np.ndarray of bool}
-        masks[t][i] = True si le point i est valide à l'échelle t.
+    masks : masks[t][i] = True si le point i est valide à l'échelle t.
     """
 
     masks = {}
@@ -217,12 +192,6 @@ def print_scale_stats(neighborhoods_dict, scales, masks_dict):
       - le nombre moyen de voisins par point (tous points confondus)
       - le nombre moyen de voisins sur les points valides uniquement
       - le nombre de points valides / total
-
-    Paramètres
-    ----------
-    neighborhoods_dict : dict {float: list of lists}
-    scales             : list of float
-    masks_dict         : dict {float: np.ndarray of bool}
     """
     n_points = len(next(iter(neighborhoods_dict.values())))
 
