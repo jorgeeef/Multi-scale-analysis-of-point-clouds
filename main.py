@@ -39,14 +39,14 @@ if __name__ == "__main__":
     vertices = clean_point_cloud(vertices)
 
     #  STEP 3 — NORMALES + COMPARAISON + VISUALISATION
-    # Priorité : maillage > OBJ > estimation ACP
+    # Priorité : maillage - OBJ - estimation ACP
     pcd = build_point_cloud_with_normals(vertices, faces, obj_normals)
     print_stats(vertices, faces, pcd)
 
     compare_normals(vertices, faces, obj_normals)
 
-    visualize_points(pcd)     # 1. sans normales
-    visualize_normals(pcd)    # 2. avec normales (fenêtre suivante)
+    visualize_points(pcd)     # sans normales
+    visualize_normals(pcd)    # avec normales (fenêtre suivante)
 
     # STEP 4 — KD-TREE
     tree = build_kdtree(vertices)
