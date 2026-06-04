@@ -1,7 +1,5 @@
-# =================================================================
+# main.py
 # PIPELINE PRINCIPAL — PRÉPARATION DES DONNÉES (ÉTAPES 1 à 6)
-# =================================================================
-
 import os
 import sys
 sys.path.append("src")
@@ -32,46 +30,33 @@ from geometry import (
 
 if __name__ == "__main__":
 
-    # ----------------------------------------------------------
+
     # STEP 1 — LECTURE DU MODÈLE .OBJ
-    # ----------------------------------------------------------
     path = os.path.join("data", "12140_Skull_v3.obj")
     vertices, faces, obj_normals = load_obj(path)
 
-    # ----------------------------------------------------------
     # STEP 2 — NETTOYAGE DES DONNÉES (suppression NaN / Inf)
-    # ----------------------------------------------------------
     vertices = clean_point_cloud(vertices)
 
-    # ----------------------------------------------------------
     #  STEP 3 — NORMALES + COMPARAISON + VISUALISATION
     # Priorité : maillage > OBJ > estimation ACP
-    # ----------------------------------------------------------
     pcd = build_point_cloud_with_normals(vertices, faces, obj_normals)
     print_stats(vertices, faces, pcd)
 
     compare_normals(vertices, faces, obj_normals)
 
-    visualize_points(pcd)     # ← 1. sans normales
-    visualize_normals(pcd)    # ← 2. avec normales (fenêtre suivante)
+    visualize_points(pcd)     # 1. sans normales
+    visualize_normals(pcd)    # 2. avec normales (fenêtre suivante)
 
-    # ----------------------------------------------------------
     # STEP 4 — KD-TREE
-    # ----------------------------------------------------------
     tree = build_kdtree(vertices)
 
-    # ----------------------------------------------------------
     # STEP 5 — VOISINAGE K-NN
-    # ----------------------------------------------------------
     knn = knn_neighbors(tree, vertices, k=30)
     print("[K-NN] shape:", knn.shape)   # (N, 30)
 
-    # ----------------------------------------------------------
-    # STEP 6 — VOISINAGES MULTI-ÉCHELLE (analyse par rayon)
-    # ----------------------------------------------------------
-# ----------------------------------------------------------
+
     # STEP 6 — VOISINAGES MULTI-ÉCHELLE
-    # ----------------------------------------------------------
     spacing = estimate_mean_spacing(vertices)
     print("[SPACING] mean nearest-neighbor distance:", spacing)
 
