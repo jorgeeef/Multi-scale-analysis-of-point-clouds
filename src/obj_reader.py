@@ -7,12 +7,6 @@ def load_obj(filepath):
     """
     Lit un fichier .obj et extrait les vertices, faces et normales.
     Les indices de faces sont convertis de base-1 (OBJ) à base-0 (Python).
-    
-    Retourne
-    --------
-    vertices : np.ndarray, shape (N, 3)
-    faces    : list of lists  (triangles, peut être vide)
-    normals  : np.ndarray, shape (M, 3)  (peut être vide)
     """
     vertices = []
     faces    = []
@@ -46,9 +40,6 @@ def clean_faces(faces):
     Filtre les faces None, les chaînes mal formées,
     et ne conserve que les triangles valides (>= 3 sommets).
     
-    Retourne
-    --------
-    np.ndarray, shape (F, 3), dtype int32
     """
     clean = []
     for f in faces:
@@ -73,16 +64,6 @@ def build_point_cloud_with_normals(vertices, faces, obj_normals):
         1. Normales calculées depuis le maillage (si faces disponibles)
         2. Normales lues depuis le fichier OBJ (si présentes et alignées)
         3. Normales estimées par ACP locale (fallback)
-
-    Paramètres
-    ----------
-    vertices    : np.ndarray, shape (N, 3)
-    faces       : list of lists ou np.ndarray
-    obj_normals : np.ndarray, shape (N, 3) ou tableau vide
-
-    Retourne
-    --------
-    pcd : o3d.geometry.PointCloud avec normales assignées
     """
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(vertices)
@@ -162,16 +143,6 @@ def compare_normals(vertices, faces, obj_normals):
         - le % de normales quasi-identiques  (cos θ > 0.99)
         - le % de normales similaires        (cos θ > 0.90)
         - le % de normales opposées          (cos θ < 0.0)
-
-    Paramètres
-    ----------
-    vertices    : np.ndarray, shape (N, 3)
-    faces       : list of lists ou np.ndarray
-    obj_normals : np.ndarray, shape (N, 3) ou tableau vide
-
-    Retourne
-    --------
-    None  (affichage console uniquement)
     """
 
     sources = {}
