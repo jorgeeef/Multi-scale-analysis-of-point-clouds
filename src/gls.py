@@ -1,309 +1,317 @@
 # src/gls.py
 # =========================================================
-# MODULE DE FITTING GLS — GROWING LEAST SQUARES
-#
-# Implémentation de la méthode de Mellado :
-# "Growing Least Squares for the Analysis of Manifolds in Scale-Space"
-# Computer Graphics Forum, vol. 31, pp. 1691-1701.
-#
-# Pour chaque point p et chaque échelle t, on ajuste une sphère
-# algébrique au voisinage local P_t(p) par moindres carrés pondérés
-# (WLS). Les descripteurs géométriques extraits (τ, η, κ, δ) forment
-# la base de l'analyse multi-échelle.
-#
-# Pipeline pour chaque point p à l'échelle t :
-#   1. Poids gaussiens w_i = exp(-‖q_i - p‖² / t²)
-#   2. Matrice de design B  (coordonnées centrées autour de p)
-#   3. Résolution WLS       (vecteur propre min de BᵀWB)
-#   4. Normalisation Pratt  (contrainte ‖ul‖² - 4·uc·uq = 1)
-#   5. Orientation de u     (alignement avec la normale estimée)
-#   6. Extraction de τ, η, κ
-#   7. Calcul de δ          (qualité du fitting)
+# Growing Least Squares — Mellado et al. (2012)
+# =========================================================
+# Implémente :
+#   - Fonction de poids de Wendland C2        (Eq. 2)
+#   - Fitting de sphère algébrique par WLS    (Appendix Eq. 7)
+#   - Normalisation de Pratt                  (Eq. 3)
+#   - Extraction des descripteurs τ, η, κ     (Eq. 4)
+#   - Calcul du fitness ϕ                     (Section 4.1)
 # =========================================================
 
 import numpy as np
 
-# Nombre minimum de voisins pour qu'un fitting soit numériquement stable.
-# Le vecteur u a 5 composantes → il faut au moins 6 équations.
-MIN_NEIGHBORS = 6
 
+# ---------------------------------------------------------
+# 1. FONCTION DE POIDS DE WENDLAND C2  (Eq. 2)
+# ---------------------------------------------------------
 
-# Poids gaussiens
-def gaussian_weights(neighbors_pts, p, t):
+def wendland_weights(neighbors, p, t):
     """
-    Calcule les poids gaussiens pour les voisins de p à l'échelle t.
- 
-    Chaque voisin q_i reçoit un poids inversement proportionnel à
-    sa distance à p : les voisins proches influencent davantage
-    le fitting que les voisins lointains.
- 
-        w_i = exp(-‖q_i - p‖² / t²)
- 
+    Calcule les poids de Wendland C2 pour les voisins de p à l'échelle t.
+
+    Formule (Eq. 2) :
+        w_i(t) = ( ||qi - p||² / t² - 1 )²
+
+    Support compact : w_i = 0 exactement pour ||qi - p|| = t.
+    Classe C² → garantit la dérivabilité du fitting par rapport à t,
+    propriété essentielle pour l'analyse continue en scale-space.
+
     Paramètres
-    neighbors_pts : np.ndarray, shape (n, 3)
-        Coordonnées des points voisins.
+    ----------
+    neighbors : np.ndarray, shape (K, 3)
+        Coordonnées des K points voisins qi.
     p : np.ndarray, shape (3,)
-        Point central (point d'analyse).
+        Point central d'évaluation.
     t : float
-        Échelle (rayon de voisinage). Contrôle la largeur de la gaussienne.
- 
+        Rayon d'échelle.
+
     Retourne
-    weights : np.ndarray, shape (n,)
-        Poids gaussiens pour chaque voisin.
+    --------
+    w : np.ndarray, shape (K,)   — poids w_i >= 0
     """
-    diff = neighbors_pts - p                    # (n, 3) vecteurs q_i - p
-    dist2 = np.sum(diff**2, axis=1)             # (n,)   distances au carré
-    weights = np.exp(-dist2 / (t ** 2))         # (n,)   poids gaussiens
-    return weights
+    diff  = neighbors - p
+    d2    = np.einsum("ij,ij->i", diff, diff)    # ||qi - p||²
+    ratio = d2 / (t * t)
+    w     = (ratio - 1.0) ** 2
+    return w
 
 
+# ---------------------------------------------------------
+# 2. FITTING DE LA SPHÈRE ALGÉBRIQUE  (Appendix Eq. 7)
+# ---------------------------------------------------------
 
-# Matrice de design
-def build_design_matrix(neighbors_pts, p):
+def fit_algebraic_sphere(p, neighbors, normals, t):
     """
-    Construit la matrice de design B pour le fitting de la sphère algébrique.
- 
-    La sphère algébrique est définie par :
-        s_u(x) = uc + ul·x + uq·‖x‖²
- 
-    où x = q_i - p (coordonnées centrées autour de p pour la stabilité numérique).
- 
-    Chaque ligne de B correspond à un voisin q_i :
-        B[i] = [1,  x_i,  y_i,  z_i,  ‖q_i - p‖²]
- 
+    Ajuste une sphère algébrique sur le voisinage P_t(p) par
+    Weighted Least Squares avec intégration des normales.
+
+    Modèle implicite (Eq. 1) :
+        s_u(x) = [1, x^T, ||x||²] · u
+        u = [uc, ul_x, ul_y, ul_z, uq]^T
+
+    Le gradient du modèle est :
+        ∇s_u(x) = ul + 2·uq·x
+
+    Deux minimisations successives (GGG08) :
+
+    Étape A — intégration des normales :
+        min_u Σ w_i ||∇s_u(qi) - ni||²
+        → donne ul et uq en closed-form
+
+    Étape B — distance algébrique :
+        min_uc Σ w_i s_u(qi)²
+        → donne uc en closed-form
+
+    Formules (Appendix Eq. 7), avec w̃_i = w_i / Σw_j :
+
+        num_uq   = Σw̃i·(qi·ni) - (Σw̃i·qi)·(Σwi·ni)
+        denom_uq = Σw̃i·||qi||² - (Σw̃i·qi)·(Σwi·qi)
+        uq = num_uq / denom_uq
+
+        ul = Σw̃i·ni - 2·uq·(Σw̃i·qi)
+
+        uc = -(ul · Σw̃i·qi) - uq·(Σw̃i·||qi||²)
+
     Paramètres
-    neighbors_pts : np.ndarray, shape (n, 3)
-        Coordonnées des points voisins (en coordonnées absolues).
+    ----------
     p : np.ndarray, shape (3,)
-        Point central — les voisins sont recentrés autour de p.
- 
+    neighbors : np.ndarray, shape (K, 3)
+    normals : np.ndarray, shape (K, 3)
+    t : float
+
     Retourne
-    B : np.ndarray, shape (n, 5)
-        Matrice de design [1 | x | y | z | ‖q‖²] en coordonnées centrées.
+    --------
+    u : np.ndarray, shape (5,) — [uc, ul_x, ul_y, ul_z, uq]
+        None si le fitting échoue.
     """
-    q = neighbors_pts - p                           # centrage autour de p 
-    n = len(q)
-    B = np.ones((n, 5))
-    B[:, 1:4] = q                                   # colonnes x, y, z
-    B[:, 4]   = np.sum(q ** 2, axis=1)              # colonne ‖q‖²
-    return B
+    K = len(neighbors)
+    if K < 6:
+        return None
 
+    # Poids de Wendland
+    w = wendland_weights(neighbors, p, t)        # (K,)
+    W_sum = np.sum(w)
+    if W_sum < 1e-10:
+        return None
+    w_tilde = w / W_sum                          # w̃i
 
-# NORMALISATION DE PRATT
-def pratt_normalize(u):
-    """
-    Applique la normalisation de Pratt au vecteur paramètre u.
- 
-    Sans contrainte, la sphère algébrique admet une infinité de
-    représentations (u et λu définissent la même surface). La
-    normalisation de Pratt impose une contrainte unique :
- 
-        ‖ul‖² - 4·uc·uq = 1
- 
-    Cette contrainte rend u stable numériquement et permet
-    d'extraire des descripteurs géométriques interprétables (τ, κ).
- 
-    Paramètres
-    u : np.ndarray, shape (5,)
-        Vecteur paramètre brut [uc, ul_x, ul_y, ul_z, uq].
- 
-    Retourne
-    u_norm : np.ndarray, shape (5,) ou None
-        Vecteur normalisé selon Pratt, ou None si la contrainte
-        est impossible (sphère dégénérée ou imaginaire).
-    """
-    uc = u[0]
-    ul = u[1:4]
-    uq = u[4]
-    denom = np.dot(ul, ul) - 4.0 * uc * uq
-    if denom <= 0:
-        return None  # sphère dégénérée (plan ou sphère imaginaire)
-    scale = 1.0 / np.sqrt(denom)
-    return u * scale
+    # Termes agrégés
+    Wt_q  = np.einsum("i,ij->j",  w_tilde, neighbors)   # Σw̃i·qi       (3,)
+    Wt_n  = np.einsum("i,ij->j",  w_tilde, normals)     # Σw̃i·ni       (3,)
+    W_n   = np.einsum("i,ij->j",  w,       normals)     # Σwi·ni        (3,)
+    W_q   = np.einsum("i,ij->j",  w,       neighbors)   # Σwi·qi        (3,)
+    Wt_q2 = np.einsum("i,ij,ij->", w_tilde, neighbors, neighbors)  # Σw̃i·||qi||²
+    Wt_qn = np.einsum("i,ij,ij->", w_tilde, neighbors, normals)    # Σw̃i·(qi·ni)
 
+    # Étape A : uq
+    num_uq   = Wt_qn  - np.dot(Wt_q, W_n)
+    denom_uq = Wt_q2  - np.dot(Wt_q, W_q)
+    if abs(denom_uq) < 1e-12:
+        return None
+    uq = num_uq / denom_uq
 
-# Résolution wls 
-def solve_wls(B, W):
-    """
-    Résout le problème de moindres carrés pondérés (WLS).
- 
-    On cherche le vecteur u qui minimise l'énergie pondérée :
-        E(u) = Σ_i w_i · s_u(q_i)²  =  uᵀ (BᵀWB) u
- 
-    La solution est le vecteur propre associé à la plus petite
-    valeur propre de la matrice symétrique M = BᵀWB.
- 
-    Paramètres
-    B : np.ndarray, shape (n, 5)
-        Matrice de design.
-    W : np.ndarray, shape (n,)
-        Vecteur des poids gaussiens (diagonale de la matrice de poids).
- 
-    Retourne
-    u : np.ndarray, shape (5,)
-        Vecteur propre associé à la plus petite valeur propre de BᵀWB.
-    """
+    # Étape A : ul
+    ul = Wt_n - 2.0 * uq * Wt_q                 # (3,)
 
-    W_diag = np.diag(W)                    # matrice diagonale des poids
-    M = B.T @ W_diag @ B                   # (5, 5) matrice symétrique
-    # eigh est plus stable que eig pour les matrices symétriques réelles
-    eigenvalues, eigenvectors = np.linalg.eigh(M)   
-    u = eigenvectors[:, 0]                     # vecteur propre de valeur min
+    # Étape B : uc
+    uc = -np.dot(ul, Wt_q) - uq * Wt_q2
+
+    u = np.concatenate(([uc], ul, [uq]))         # (5,)
+
+    if not np.all(np.isfinite(u)):
+        return None
+
     return u
 
 
-# Fitting principal - sphère algébrique
-def fit_algebraic_sphere(p, neighbors_pts, t, normal_p=None):
+# ---------------------------------------------------------
+# 3. NORMALISATION DE PRATT  (Eq. 3)
+# ---------------------------------------------------------
+
+def pratt_normalize(u):
     """
-    Ajuste une sphère algébrique au voisinage local d'un point p
-    à l'échelle t par la méthode GLS (Growing Least Squares).
- 
-    Étapes internes :
-        1. Vérifie que le voisinage est suffisant (>= MIN_NEIGHBORS)
-        2. Calcule les poids gaussiens
-        3. Construit la matrice de design B (coordonnées centrées)
-        4. Résout le WLS (vecteur propre minimal)
-        5. Applique la normalisation de Pratt
-        6. Oriente u pour que ∇s_u(p) soit aligné avec normal_p
- 
+    Applique la normalisation de Pratt au vecteur de paramètres u.
+
+    Formule (Eq. 3) :
+        û = u / sqrt( ||ul||² - 4·uc·uq )
+
+    Effet : contraint le gradient de s_û à être unitaire sur la
+    0-isosurface → distances algébriques quasi-euclidiennes.
+    Résout l'ambiguïté de signe (u et λu définissent la même sphère).
+
     Paramètres
-    p : np.ndarray, shape (3,)
-        Point central d'analyse.
-    neighbors_pts : np.ndarray, shape (n, 3)
-        Coordonnées des voisins de p à l'échelle t.
-    t : float
-        Échelle courante (rayon de voisinage).
-    normal_p : np.ndarray, shape (3,) ou None
-        Normale estimée au point p (Open3D). Utilisée pour orienter
-        le signe de u de façon cohérente.
- 
-    Retourne
-    u : np.ndarray, shape (5,) ou None
-        Vecteur paramètre normalisé [uc, ul_x, ul_y, ul_z, uq],
-        ou None si le fitting est impossible (trop peu de voisins,
-        matrice singulière, sphère dégénérée).
-    """
-    if len(neighbors_pts) < MIN_NEIGHBORS:
-        return None
-
-    try:
-        W = gaussian_weights(neighbors_pts, p, t)
-        B = build_design_matrix(neighbors_pts, p)
-        u = solve_wls(B, W)
-        u = pratt_normalize(u)
-
-        if u is None:
-            return None
-
-        # Orientation de u : en coordonnées centrées, p_local = 0,
-        # donc ∇s_u(0) = ul. On s'assure que ul pointe dans le même
-        # sens que la normale estimée par Open3D.
-        if normal_p is not None:
-            ul = u[1:4]
-            uq = u[4]
-            grad_p = ul      
-            if np.dot(grad_p, normal_p) < 0:
-                u = -u                         # inversion globale du signe de u
- 
-        return u
-    
-    except np.linalg.LinAlgError:
-        return None
-
-
-# Extraction des descripteurs géométriques
-def extract_descriptors(u, p):
-    """
-    Extrait les descripteurs géométriques locaux depuis u normalisé.
- 
-    En coordonnées centrées (p est l'origine locale), les formules
-    se simplifient :
-        τ  = s_u(0)   = uc               (offset algébrique)
-        η  = ∇s_u(0) / ‖∇s_u(0)‖  = ul / ‖ul‖   (normale locale)
-        κ  = 2·uq                        (courbure moyenne)
- 
-    Interprétation géométrique :
-        - τ ≈ 0 : p est proche de la surface implicite
-        - η     : direction normale à la surface en p
-        - κ > 0 : surface convexe  (sphère pointant vers l'extérieur)
-        - κ < 0 : surface concave  (sphère pointant vers l'intérieur)
-        - κ ≈ 0 : surface plane localement
- 
-    Paramètres
+    ----------
     u : np.ndarray, shape (5,)
-        Vecteur paramètre normalisé (Pratt).
-    p : np.ndarray, shape (3,)
-        Point central (non utilisé ici car coordonnées centrées,
-        conservé pour cohérence de l'interface).
- 
-    Retourne
-    tau   : float         — offset algébrique
-    eta   : np.ndarray (3,) — normale locale normalisée
-    kappa : float         — courbure (2 * uq)
-    """
 
+    Retourne
+    --------
+    u_hat : np.ndarray, shape (5,)
+        None si dégénéré (sphère imaginaire ou point).
+    """
     uc = u[0]
     ul = u[1:4]
     uq = u[4]
 
-    tau = uc                     # s_u(0) = uc en coordonnées centrées
+    pratt_sq = np.dot(ul, ul) - 4.0 * uc * uq
+    if pratt_sq <= 1e-10:
+        return None
 
-    grad_norm = np.linalg.norm(ul)
-    if grad_norm < 1e-10:
-            eta = np.zeros(3)  # gradient nul → normale indéfinie
-    else:
-        eta = ul / grad_norm
+    u_hat = u / np.sqrt(pratt_sq)
+    return u_hat
 
-    kappa = 2.0 * uq
+
+# ---------------------------------------------------------
+# 4. EXTRACTION DES DESCRIPTEURS  (Eq. 4)
+# ---------------------------------------------------------
+
+def extract_descriptors(u_hat, p):
+    """
+    Extrait les descripteurs géométriques (τ, η, κ) depuis û.
+
+    Formules (Eq. 4) :
+        τ = s_û(p) = ûc + ûl^T·p + ûq·||p||²
+        η = ∇s_û(p) / ||∇s_û(p)||    avec ∇s_û(p) = ûl + 2·ûq·p
+        κ = 2·ûq
+
+    Interprétation :
+        τ > 0  → p est à l'extérieur de la sphère ajustée
+        τ = 0  → p est sur la surface
+        τ < 0  → p est à l'intérieur
+        η      → direction vers la surface (normale locale)
+        κ > 0  → convexe   (comme vu depuis l'extérieur)
+        κ = 0  → plan local (rayon infini)
+        κ < 0  → concave
+
+    Paramètres
+    ----------
+    u_hat : np.ndarray, shape (5,)
+    p     : np.ndarray, shape (3,)
+
+    Retourne
+    --------
+    tau   : float
+    eta   : np.ndarray, shape (3,)
+    kappa : float
+    """
+    uc_hat = u_hat[0]
+    ul_hat = u_hat[1:4]
+    uq_hat = u_hat[4]
+
+    # τ = s_û(p)
+    tau = uc_hat + np.dot(ul_hat, p) + uq_hat * np.dot(p, p)
+
+    # η = ∇s_û(p) / ||∇s_û(p)||
+    grad      = ul_hat + 2.0 * uq_hat * p
+    grad_norm = np.linalg.norm(grad)
+    eta       = grad / grad_norm if grad_norm > 1e-10 else np.zeros(3)
+
+    # κ = 2·ûq
+    kappa = 2.0 * uq_hat
+
     return tau, eta, kappa
 
 
-# Qualité du fitting - paramètre delta (mellado)
-def compute_fitness(u, neighbors_pts, p, normals_pts, weights):
+# ---------------------------------------------------------
+# 5. FITNESS  (Section 4.1)
+# ---------------------------------------------------------
+
+def compute_fitness(u, neighbors, normals, p, t):
     """
-    Calcule le paramètre de fitness δ (qualité du fitting GLS).
- 
-    δ mesure l'alignement moyen entre la normale estimée par la sphère
-    algébrique et les normales réelles des points voisins :
- 
-        δ = Σ_i w_i · (∇s_u(q_i) / ‖∇s_u(q_i)‖) · n_i
-            ─────────────────────────────────────────────
-                         Σ_i w_i
- 
-    Interprétation :
-        δ = 1  → alignement parfait, fitting excellent
-        δ ≈ 0  → mauvais alignement (zone concave, bord ouvert,
-                  ou normales mal orientées)
- 
-    Ce paramètre permet de filtrer les zones géométriquement
-    complexes avant l'analyse multi-échelle et multi-fractale.
- 
+    Calcule le fitness ϕ : qualité d'alignement du champ scalaire
+    ajusté avec les normales d'entrée.
+
+    Formule (Section 4.1) :
+        ϕ = Σ w_i(t) · ∇s_u(qi) · ni  /  Σ w_i(t)
+
+    où ∇s_u(x) = ul + 2·uq·x  est le gradient du champ ajusté.
+
+    Propriétés :
+        ϕ = 1.0  → alignement parfait (surface lisse, normales cohérentes)
+        ϕ < 0.9  → fit dégradé (bruit, zone concave, bord ouvert)
+        ϕ ≈ 0    → fit incohérent
+
     Paramètres
-    u : np.ndarray, shape (5,)
-        Vecteur paramètre normalisé (Pratt).
-    neighbors_pts : np.ndarray, shape (n, 3)
-        Coordonnées absolues des voisins.
-    p : np.ndarray, shape (3,)
-        Point central (pour centrer les coordonnées).
-    normals_pts : np.ndarray, shape (n, 3)
-        Normales estimées (Open3D) des points voisins.
-    weights : np.ndarray, shape (n,)
-        Poids gaussiens des voisins.
- 
+    ----------
+    u         : np.ndarray, shape (5,)   — paramètres bruts
+    neighbors : np.ndarray, shape (K, 3)
+    normals   : np.ndarray, shape (K, 3)
+    p         : np.ndarray, shape (3,)
+    t         : float
+
     Retourne
-    delta : float
-        Indice de qualité du fitting, dans [-1, 1].
+    --------
+    phi : float ∈ [0, 1]
     """
+    w = wendland_weights(neighbors, p, t)
+    W_sum = np.sum(w)
+    if W_sum < 1e-10:
+        return 0.0
 
     ul = u[1:4]
     uq = u[4]
 
-    q_local = neighbors_pts - p                             # centrage autour de p
-    grads = ul + 2.0 * uq * q_local                        #  (n, 3) gradients aux voisins
-    norms = np.linalg.norm(grads, axis=1, keepdims=True)
-    norms = np.where(norms < 1e-10, 1.0, norms)           # évite la division par zéro
-    grads_normalized = grads / norms                      # (n, 3) gradients normalisés
+    # ∇s_u(qi) = ul + 2·uq·qi
+    grad_su      = ul[None, :] + 2.0 * uq * neighbors   # (K, 3)
+    dot_products = np.einsum("ij,ij->i", grad_su, normals)  # (K,)
 
-    dot_products = np.sum(grads_normalized * normals_pts, axis=1)  # (n,)
-    delta = np.sum(weights * dot_products) / np.sum(weights)
-    return delta
+    phi = np.sum(w * dot_products) / W_sum
+    return float(np.clip(phi, 0.0, 1.0))
+
+
+# ---------------------------------------------------------
+# 6. PIPELINE GLS COMPLET POUR UN POINT
+# ---------------------------------------------------------
+
+def gls_at_point(p, neighbors, normals, t):
+    """
+    Pipeline GLS complet pour un point p à l'échelle t.
+
+    Enchaîne :
+        1. fit_algebraic_sphere  — WLS avec normales (Eq. 7)
+        2. pratt_normalize       — unicité (Eq. 3)
+        3. extract_descriptors   — τ, η, κ (Eq. 4)
+        4. compute_fitness       — ϕ (Section 4.1)
+
+    Paramètres
+    ----------
+    p         : np.ndarray, shape (3,)
+    neighbors : np.ndarray, shape (K, 3)
+    normals   : np.ndarray, shape (K, 3)
+    t         : float
+
+    Retourne
+    --------
+    dict : { 'tau', 'eta', 'kappa', 'phi', 'u', 'u_hat' }
+    None : si le fitting échoue à n'importe quelle étape.
+    """
+    u = fit_algebraic_sphere(p, neighbors, normals, t)
+    if u is None:
+        return None
+
+    u_hat = pratt_normalize(u)
+    if u_hat is None:
+        return None
+
+    tau, eta, kappa = extract_descriptors(u_hat, p)
+    phi             = compute_fitness(u, neighbors, normals, p, t)
+
+    return {
+        "tau"   : tau,
+        "eta"   : eta,
+        "kappa" : kappa,
+        "phi"   : phi,
+        "u"     : u,
+        "u_hat" : u_hat,
+    }
