@@ -12,10 +12,7 @@
 
 import numpy as np
 
-
-# ---------------------------------------------------------
 # 1. FONCTION DE POIDS DE WENDLAND C2  (Eq. 2)
-# ---------------------------------------------------------
 
 def wendland_weights(neighbors, p, t):
     """
@@ -32,14 +29,12 @@ def wendland_weights(neighbors, p, t):
     ----------
     neighbors : np.ndarray, shape (K, 3)
         Coordonnées des K points voisins qi.
-    p : np.ndarray, shape (3,)
-        Point central d'évaluation.
-    t : float
-        Rayon d'échelle.
+    p : Point central d'évaluation.
+    t : Rayon d'échelle.
 
     Retourne
     --------
-    w : np.ndarray, shape (K,)   — poids w_i >= 0
+    w : poids w_i >= 0
     """
     diff  = neighbors - p
     d2    = np.einsum("ij,ij->i", diff, diff)    # ||qi - p||²
@@ -47,10 +42,7 @@ def wendland_weights(neighbors, p, t):
     w     = (ratio - 1.0) ** 2
     return w
 
-
-# ---------------------------------------------------------
 # 2. FITTING DE LA SPHÈRE ALGÉBRIQUE  (Appendix Eq. 7)
-# ---------------------------------------------------------
 
 def fit_algebraic_sphere(p, neighbors, normals, t):
     """
@@ -84,16 +76,9 @@ def fit_algebraic_sphere(p, neighbors, normals, t):
 
         uc = -(ul · Σw̃i·qi) - uq·(Σw̃i·||qi||²)
 
-    Paramètres
-    ----------
-    p : np.ndarray, shape (3,)
-    neighbors : np.ndarray, shape (K, 3)
-    normals : np.ndarray, shape (K, 3)
-    t : float
-
     Retourne
     --------
-    u : np.ndarray, shape (5,) — [uc, ul_x, ul_y, ul_z, uq]
+    u : [uc, ul_x, ul_y, ul_z, uq]
         None si le fitting échoue.
     """
     K = len(neighbors)
@@ -171,10 +156,7 @@ def pratt_normalize(u):
     u_hat = u / np.sqrt(pratt_sq)
     return u_hat
 
-
-# ---------------------------------------------------------
 # 4. EXTRACTION DES DESCRIPTEURS  (Eq. 4)
-# ---------------------------------------------------------
 
 def extract_descriptors(u_hat, p):
     """
@@ -269,10 +251,7 @@ def compute_fitness(u, neighbors, normals, p, t):
     phi = np.sum(w * dot_products) / W_sum
     return float(np.clip(phi, 0.0, 1.0))
 
-
-# ---------------------------------------------------------
 # 6. PIPELINE GLS COMPLET POUR UN POINT
-# ---------------------------------------------------------
 
 def gls_at_point(p, neighbors, normals, t):
     """
