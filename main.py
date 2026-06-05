@@ -69,6 +69,11 @@ if __name__ == "__main__":
         factor_max=15,
         mode="log"
     )
+    print("log de u en fonction de v:", scales)
+    scales= build_scales_from_spacing(
+        spacing,
+        n_scales=12,
+    )
     print("[SCALES]", np.round(scales, 4))
 
     neighborhoods_dict = multi_scale_neighbors(vertices, scales)
@@ -81,17 +86,21 @@ if __name__ == "__main__":
 
     # GLS et descripteur
     normals_np = np.asarray(pcd.normals)
+
     TAU   = np.full((len(vertices), len(scales)), np.nan)
     KAPPA = np.full((len(vertices), len(scales)), np.nan)
     PHI   = np.full((len(vertices), len(scales)), np.nan)
+    ETA   = np.full((len(vertices), len(scales), 3), np.nan)
 
     for j, t in enumerate(scales):
+        print(f"[GLS] échelle {j+1}/{len(scales)}  t={t:.4f}")
         for i, p in enumerate(vertices):
             if not masks[j][i]:
                 continue
-            idx = neighborhoods[j][i]
+            idx    = neighborhoods[j][i]
             result = gls_at_point(p, vertices[idx], normals_np[idx], t)
             if result:
-                TAU[i, j]   = result["tau"]
-                KAPPA[i, j] = result["kappa"]
-                PHI[i, j]   = result["phi"]
+                TAU[i, j]      = result["tau"]
+                KAPPA[i, j]    = result["kappa"]
+                PHI[i, j]      = result["phi"]
+                ETA[i, j]      = result["eta"]
