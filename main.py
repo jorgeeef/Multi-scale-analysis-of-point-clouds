@@ -27,6 +27,8 @@ from geometry import (
     print_scale_stats
 )
 
+from gls import gls_at_point
+
 
 if __name__ == "__main__":
 
@@ -76,3 +78,20 @@ if __name__ == "__main__":
     masks         = [masks_dict[t]         for t in scales]
 
     print_scale_stats(neighborhoods_dict, scales, masks_dict)   
+
+    # GLS et descripteur
+    normals_np = np.asarray(pcd.normals)
+    TAU   = np.full((len(vertices), len(scales)), np.nan)
+    KAPPA = np.full((len(vertices), len(scales)), np.nan)
+    PHI   = np.full((len(vertices), len(scales)), np.nan)
+
+    for j, t in enumerate(scales):
+        for i, p in enumerate(vertices):
+            if not masks[j][i]:
+                continue
+            idx = neighborhoods[j][i]
+            result = gls_at_point(p, vertices[idx], normals_np[idx], t)
+            if result:
+                TAU[i, j]   = result["tau"]
+                KAPPA[i, j] = result["kappa"]
+                PHI[i, j]   = result["phi"]
