@@ -1,0 +1,18 @@
+# =============================================================
+# requirements.txt — Projet GLS (Mellado et al. 2012)
+# =============================================================
+# Installation :
+#   pip install -r requirements.txt
+#
+# Python requis : 3.8 – 3.11
+# (open3d ne supporte pas encore Python 3.12+)
+# =============================================================
+
+# Calcul numérique
+numpy>=1.21
+
+# Visualisation et traitement de nuages de points
+open3d>=0.17.0
+
+# Structures spatiales (cKDTree pour les voisinages)
+scipy>=1.7
