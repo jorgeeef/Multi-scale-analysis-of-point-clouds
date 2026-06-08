@@ -121,10 +121,7 @@ def fit_algebraic_sphere(p, neighbors, normals, t):
     return u
 
 
-# ---------------------------------------------------------
 # 3. NORMALISATION DE PRATT  (Eq. 3)
-# ---------------------------------------------------------
-
 def pratt_normalize(u):
     """
     Applique la normalisation de Pratt au vecteur de paramètres u.
@@ -205,9 +202,7 @@ def extract_descriptors(u_hat, p):
     return tau, eta, kappa
 
 
-# ---------------------------------------------------------
 # 5. FITNESS  (Section 4.1)
-# ---------------------------------------------------------
 
 def compute_fitness(u, neighbors, normals, p, t):
     """

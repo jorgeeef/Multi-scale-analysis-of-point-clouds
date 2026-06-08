@@ -69,11 +69,6 @@ if __name__ == "__main__":
         factor_max=15,
         mode="log"
     )
-    print("log de u en fonction de v:", scales)
-    scales= build_scales_from_spacing(
-        spacing,
-        n_scales=12,
-    )
     print("[SCALES]", np.round(scales, 4))
 
     neighborhoods_dict = multi_scale_neighbors(vertices, scales)
