@@ -163,7 +163,6 @@ def compute_validity_mask(neighborhoods, min_neighbors=6):
     contient au moins `min_neighbors` points. En dessous de ce seuil,
     le système linéaire du fitting GLS est sous-déterminé (le vecteur
     u a 5 composantes, il faut donc au moins 6 équations).
- 
     Les points invalides recevront des descripteurs NaN dans la
     boucle de fitting GLS.
  
