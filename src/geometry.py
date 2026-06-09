@@ -26,11 +26,9 @@ def clean_point_cloud(points):
 def build_kdtree(points):
     """
     Construit un KD-tree spatial à partir du nuage de points.
- 
     Le KD-tree (scipy.cKDTree) permet des recherches de voisins
     en O(log N) au lieu de O(N), ce qui est essentiel pour les
     voisinages multi-échelle sur des nuages de grande taille.
- 
     """
     return cKDTree(points)
 

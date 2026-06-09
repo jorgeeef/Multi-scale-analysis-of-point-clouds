@@ -2,8 +2,12 @@
 # requirements.txt — Projet GLS (Mellado et al. 2012)
 # =============================================================
 # Installation :
-#   pip install -r requirements.txt
-#
+#   
+#sudo apt update
+#sudo apt install python3.12-venv
+#python3 -m venv venv
+#pip install -r requirements.txt
+
 # Python requis : 3.8 – 3.11
 # (open3d ne supporte pas encore Python 3.12+)
 # =============================================================
