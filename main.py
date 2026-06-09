@@ -54,6 +54,7 @@ if __name__ == "__main__":
 
     # Construire le chemin du fichier sélectionné
     path = os.path.join(data_folder, obj_files[choice - 1])
+    obj_name = os.path.splitext(obj_files[choice - 1])[0]
     print(f"\nFichier sélectionné : {path}")
 
     vertices, faces, obj_normals = load_obj(path)
