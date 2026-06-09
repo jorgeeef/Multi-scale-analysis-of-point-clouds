@@ -47,20 +47,17 @@ def knn_neighbors(tree, points, k=30):
     return idx
 
 
-# Voisinage par rayon (cœur du multi-échelle)
+# Voisinage par rayon 
 def radius_neighbors(tree, points, radius):
     """
     Calcule le voisinage par rayon pour chaque point du nuage.
- 
     Pour chaque point p, retourne tous les indices des points q
-    tels que ‖q - p‖ ≤ radius. C'est le voisinage P_t(p) utilisé
-    dans la formulation GLS de Mellado
- 
+    tels que ‖q - p‖ ≤ radius. C'est le voisinage P_t(p)
+
     Paramètres
     tree : KD-tree construit sur le nuage de points.
     points : Coordonnées des points du nuage.
-    radius : Rayon de recherche (échelle t dans la notation GLS).
- 
+    radius : Rayon de recherche (échelle t).
     Retourne
     neighbors : neighbors[i] contient les indices des voisins du point i
         dans la boule de rayon `radius`.
