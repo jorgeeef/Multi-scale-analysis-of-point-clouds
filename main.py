@@ -34,7 +34,28 @@ if __name__ == "__main__":
 
 
     # STEP 1 — LECTURE DU MODÈLE .OBJ
-    path = os.path.join("data", "12140_Skull_v3.obj")
+    #path = os.path.join("data", "12140_Skull_v3.obj")
+    data_folder = "data"
+    obj_files = [f for f in os.listdir(data_folder) if f.lower().endswith(".obj")]
+    if not obj_files:
+        raise FileNotFoundError(f"Aucun fichier .obj trouvé dans le dossier '{data_folder}'.")
+    print("\nFichiers OBJ disponibles :")
+    for i, file in enumerate(obj_files, start=1):
+        print(f"{i}. {file}")
+    while True:
+        try:
+            choice = int(input("\nChoisissez un fichier (numéro) : "))
+            if 1 <= choice <= len(obj_files):
+                break
+            else:
+                print("Numéro invalide.")
+        except ValueError:
+            print("Veuillez entrer un nombre.")
+
+    # Construire le chemin du fichier sélectionné
+    path = os.path.join(data_folder, obj_files[choice - 1])
+    print(f"\nFichier sélectionné : {path}")
+
     vertices, faces, obj_normals = load_obj(path)
 
     # STEP 2 — NETTOYAGE DES DONNÉES (suppression NaN / Inf)
