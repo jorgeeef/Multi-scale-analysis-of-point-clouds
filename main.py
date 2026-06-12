@@ -32,6 +32,10 @@ from geometry import (
 )
 from gls      import gls_at_point
 from notebooks import notebook_exists, save_results, load_results
+from visualization import (                                # ← NOUVEAU
+    save_tau_colormap_all_scales,
+    show_tau_colormap_interactive,
+)
 
 
 # =================================================================
@@ -182,3 +186,21 @@ if __name__ == "__main__":
             KAPPA              = KAPPA,
             normals_np         = normals_np,
         )
+
+
+    #COLORATION τ  (TOUJOURS, après cache ou calcul)    
+    save_tau_colormap_all_scales(pcd, TAU, scales, obj_name)
+
+    # Optionnel : ouvrir une fenêtre interactive pour la 1re échelle
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=0)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=1)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=2)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=3)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=4)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=5)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=6)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=7)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=8)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=9)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=10)
+    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=11)
