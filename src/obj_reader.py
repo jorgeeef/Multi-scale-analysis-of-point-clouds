@@ -1,7 +1,7 @@
 # src/obj_reader.py
 import numpy as np
 import open3d as o3d
-
+import os
 
 def load_obj(filepath):
     """
@@ -233,3 +233,82 @@ def compare_normals(vertices, faces, obj_normals):
             print()
 
     print("=" * 48 + "\n")
+
+
+def save_pointcloud_ply(pcd, obj_name, output_dir="notebooks"):
+    """
+    Sauvegarde le nuage de points Open3D au format .ply.
+
+    Le fichier contient les positions des points et leurs normales,
+    rechargeable plus tard avec o3d.io.read_point_cloud(...).
+
+    Paramètres
+    ----------
+    pcd        : o3d.geometry.PointCloud
+    obj_name   : str
+    output_dir : str  (défaut "notebooks")
+
+    Retourne
+    --------
+    path : str  — chemin du fichier créé
+    """
+    folder = os.path.join(output_dir, obj_name)
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, f"{obj_name}_pointcloud.ply")
+
+    success = o3d.io.write_point_cloud(path, pcd, write_ascii=True)
+    if success:
+        print(f"[PCD] Sauvegardé : {path}")
+    else:
+        print(f"[PCD] ECHEC sauvegarde : {path}")
+    return path
+
+
+def save_pointcloud_screenshot(pcd, obj_name, output_dir="notebooks",
+                               show_normals=False, width=1024, height=768):
+    """
+    Capture une image PNG du nuage de points via le visualiseur Open3D
+    en mode 'headless' (sans interaction utilisateur).
+
+    Une fenêtre s'ouvre brièvement puis se ferme automatiquement
+    après la capture.
+
+    Paramètres
+    ----------
+    pcd          : o3d.geometry.PointCloud
+    obj_name     : str
+    output_dir   : str
+    show_normals : bool   — afficher les normales sur la capture
+    width, height: int    — résolution de l'image
+
+    Retourne
+    --------
+    path : str  — chemin de l'image créée
+    """
+    folder = os.path.join(output_dir, obj_name)
+    os.makedirs(folder, exist_ok=True)
+
+    suffix = "with_normals" if show_normals else "points"
+    path   = os.path.join(folder, f"{obj_name}_{suffix}.png")
+
+    # Visualiseur off-screen
+    vis = o3d.visualization.Visualizer()
+    vis.create_window(visible=False, width=width, height=height)
+    vis.add_geometry(pcd)
+
+    # Options de rendu
+    opt = vis.get_render_option()
+    opt.point_show_normal = show_normals
+    opt.background_color  = np.array([1.0, 1.0, 1.0])   # fond blanc
+    opt.point_size        = 2.0
+
+    # Ajuster la caméra automatiquement à la géométrie
+    vis.poll_events()
+    vis.update_renderer()
+
+    # Capture
+    vis.capture_screen_image(path, do_render=True)
+    vis.destroy_window()
+
+    print(f"[PNG] Sauvegardé : {path}")
+    return path

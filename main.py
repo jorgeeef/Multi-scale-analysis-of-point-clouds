@@ -17,6 +17,8 @@ from obj_reader import (
     visualize_points,
     visualize_normals,
     compare_normals,
+    save_pointcloud_ply,         
+    save_pointcloud_screenshot,
 )
 from geometry import (
     clean_point_cloud,
@@ -99,6 +101,12 @@ if __name__ == "__main__":
         # STEP 4 — NORMALES + VISUALISATION
         # ------------------------------------------------------
         pcd = build_point_cloud_with_normals(vertices, faces, obj_normals)
+
+        #save_pointcloud_ply(pcd, obj_name)
+        save_pointcloud_screenshot(pcd, obj_name, show_normals=False)
+        save_pointcloud_screenshot(pcd, obj_name, show_normals=True)
+
+
         print_stats(vertices, faces, pcd)
         compare_normals(vertices, faces, obj_normals)
 
