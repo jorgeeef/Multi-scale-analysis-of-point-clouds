@@ -34,10 +34,12 @@ def _tau_to_color(tau_values, tau_min, tau_max):
         colors[:] = [0.5, 0.5, 0.5]
         return colors
 
-    betta            = (tau_values - tau_min) / delta
+    betta            = (tau_values - tau_min) / delta   #  β = (τ - τ_min) / (τ_max - τ_min)  ∈ [0, 1]
     colors[:, 0]     = betta            # R = β
     colors[:, 1]     = 0.0              # G = 0
     colors[:, 2]     = 1.0 - betta      # B = 1 - β
+    #couleur = (β, 0, 1 - β)
+
 
     # NaN (échec du fit) → gris (0.5, 0.5, 0.5) neutre
     nan_mask         = np.isnan(tau_values)
