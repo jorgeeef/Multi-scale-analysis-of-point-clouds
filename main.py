@@ -68,20 +68,42 @@ if __name__ == "__main__":
     print(f"\n[INFO] Fichier sélectionné : {path}")
 
     # ----------------------------------------------------------
-    # STEP 2 — VÉRIFICATION DU CACHE (notebooks/)
+    # STEP 2 — CHARGEMENT + NETTOYAGE  (toujours)
+    # ----------------------------------------------------------
+    vertices, faces, obj_normals = load_obj(path)
+    vertices = clean_point_cloud(vertices)
+
+    # ----------------------------------------------------------
+    # STEP 3 — NORMALES + PCD  (toujours)
+    # ----------------------------------------------------------
+    pcd = build_point_cloud_with_normals(vertices, faces, obj_normals)
+    print_stats(vertices, faces, pcd)
+
+    # ----------------------------------------------------------
+    # STEP 4 — SAUVEGARDES PCD  (toujours, à chaque exécution)
+    # ----------------------------------------------------------
+    save_pointcloud_ply(pcd, obj_name)
+    save_pointcloud_screenshot(pcd, obj_name, show_normals=False)
+    save_pointcloud_screenshot(pcd, obj_name, show_normals=True)
+
+    # ----------------------------------------------------------
+    # STEP 5 — VISUALISATION OPEN3D  (toujours)
+    # ----------------------------------------------------------
+    visualize_points(pcd)
+    visualize_normals(pcd)
+
+    # ----------------------------------------------------------
+    # STEP 6 — CACHE GLS  (lecture si dispo, sinon calcul)
     # ----------------------------------------------------------
     if notebook_exists(obj_name):
 
-        print(f"[NOTEBOOK] Cache trouvé pour '{obj_name}' → lecture des résultats.")
-        results = load_results(obj_name)
-
-        # Les résultats sont disponibles directement :
+        print(f"[NOTEBOOK] Cache trouvé pour '{obj_name}' → lecture.")
+        results   = load_results(obj_name)
         scales    = results["scales"]
         TAU       = results["TAU"]
         KAPPA     = results["KAPPA"]
-        ETA_angle = results["ETA_angle"]   # angles η vs normale, en degrés
+        ETA_angle = results["ETA_angle"]
 
-        print("[INFO] Résultats chargés depuis le cache.")
         print(f"       scales : {np.round(scales, 4)}")
         print(f"       TAU    : {TAU.shape}")
         print(f"       KAPPA  : {KAPPA.shape}")
@@ -91,38 +113,15 @@ if __name__ == "__main__":
 
         print(f"[NOTEBOOK] Aucun cache pour '{obj_name}' → calcul complet.")
 
-        # ------------------------------------------------------
-        # STEP 3 — CHARGEMENT + NETTOYAGE
-        # ------------------------------------------------------
-        vertices, faces, obj_normals = load_obj(path)
-        vertices = clean_point_cloud(vertices)
-
-        # ------------------------------------------------------
-        # STEP 4 — NORMALES + VISUALISATION
-        # ------------------------------------------------------
-        pcd = build_point_cloud_with_normals(vertices, faces, obj_normals)
-
-        #save_pointcloud_ply(pcd, obj_name)
-        save_pointcloud_screenshot(pcd, obj_name, show_normals=False)
-        save_pointcloud_screenshot(pcd, obj_name, show_normals=True)
-
-
-        print_stats(vertices, faces, pcd)
+        # Comparaison normales seulement au premier calcul
         compare_normals(vertices, faces, obj_normals)
 
-        visualize_points(pcd)    # fenêtre 1 : sans normales
-        visualize_normals(pcd)   # fenêtre 2 : avec normales
-
-        # ------------------------------------------------------
-        # STEP 5 — KD-TREE + K-NN
-        # ------------------------------------------------------
+        # KD-TREE + K-NN
         tree = build_kdtree(vertices)
         knn  = knn_neighbors(tree, vertices, k=30)
         print(f"[K-NN] shape : {knn.shape}")
 
-        # ------------------------------------------------------
-        # STEP 6 — VOISINAGES MULTI-ÉCHELLE
-        # ------------------------------------------------------
+        # Voisinages multi-échelle
         spacing = estimate_mean_spacing(vertices)
         print(f"[SPACING] espacement moyen : {spacing:.6f}")
 
@@ -143,9 +142,7 @@ if __name__ == "__main__":
 
         print_scale_stats(neighborhoods_dict, scales, masks_dict)
 
-        # ------------------------------------------------------
-        # STEP 7 — FITTING GLS
-        # ------------------------------------------------------
+        # Fitting GLS
         normals_np = np.asarray(pcd.normals)
         N          = len(vertices)
         S          = len(scales)
@@ -161,12 +158,7 @@ if __name__ == "__main__":
                 if not masks[j][i]:
                     continue
                 idx    = neighborhoods[j][i]
-                result = gls_at_point(
-                    p,
-                    vertices[idx],
-                    normals_np[idx],
-                    t,
-                )
+                result = gls_at_point(p, vertices[idx], normals_np[idx], t)
                 if result:
                     TAU[i, j]   = result["tau"]
                     KAPPA[i, j] = result["kappa"]
@@ -175,20 +167,18 @@ if __name__ == "__main__":
 
         print("[GLS] Calcul terminé.")
 
-        # ------------------------------------------------------
-        # STEP 8 — SAUVEGARDE DANS notebooks/
-        # ------------------------------------------------------
+        # Sauvegarde dans notebooks/
         save_results(
-            obj_name   = obj_name,
-            vertices   = vertices,
-            faces      = faces,
-            pcd        = pcd,
-            spacing    = spacing,
-            scales     = scales,
-            masks_dict = masks_dict,
-            neighborhoods_dict = neighborhoods_dict,  
-            TAU        = TAU,
-            ETA        = ETA,
-            KAPPA      = KAPPA,
-            normals_np = normals_np,
+            obj_name           = obj_name,
+            vertices           = vertices,
+            faces              = faces,
+            pcd                = pcd,
+            spacing            = spacing,
+            scales             = scales,
+            masks_dict         = masks_dict,
+            neighborhoods_dict = neighborhoods_dict,
+            TAU                = TAU,
+            ETA                = ETA,
+            KAPPA              = KAPPA,
+            normals_np         = normals_np,
         )
