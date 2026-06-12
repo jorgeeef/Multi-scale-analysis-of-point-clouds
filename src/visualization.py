@@ -1,7 +1,7 @@
 # src/visualization.py
-# =========================================================
-# VISUALISATION SCALAIRE — coloration des points par τ
-# =========================================================
+# =====================================================
+# Visualtisation scalaire - coloration des points par τ
+# =====================================================
 # Pour chaque point p et chaque échelle t, mappe la valeur de τ
 # vers une couleur RGB par interpolation linéaire :
 #
@@ -11,13 +11,9 @@
 #   τ_min  →  bleu  (0, 0, 1)
 #   τ_max  →  rouge (1, 0, 0)
 #
-# τ_min et τ_max sont calculés GLOBALEMENT sur toutes les
+# τ_min et τ_max sont calculés globalement sur toutes les
 # échelles pour garantir une comparaison visuelle cohérente
 # entre les images.
-#
-# Points NaN (échec du fit) → gris (0.5, 0.5, 0.5)
-# =========================================================
-
 import os
 import copy
 import numpy as np
@@ -28,8 +24,7 @@ def _tau_to_color(tau_values, tau_min, tau_max):
     """
     Convertit un vecteur de τ en couleurs RGB linéaires.
     NaN → gris.
-
-    Retourne np.ndarray shape (N, 3) avec valeurs ∈ [0, 1].
+    Retourne des valeurs ∈ [0, 1].
     """
     n      = len(tau_values)
     colors = np.zeros((n, 3))
@@ -44,26 +39,21 @@ def _tau_to_color(tau_values, tau_min, tau_max):
     colors[:, 1]     = 0.0              # G = 0
     colors[:, 2]     = 1.0 - betta      # B = 1 - β
 
-    # NaN → gris neutre
+    # NaN (échec du fit) → gris (0.5, 0.5, 0.5) neutre
     nan_mask         = np.isnan(tau_values)
     colors[nan_mask] = [0.5, 0.5, 0.5]
 
     return np.clip(colors, 0.0, 1.0)
 
 
-def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
-                                 output_dir="notebooks",
-                                 width=1024, height=768):
+def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name, output_dir="notebooks", width=1024, height=768):
     """
-    Génère une image PNG du nuage coloré par τ pour CHAQUE échelle.
-
-    τ_min et τ_max sont calculés sur TOUTES les échelles → le gradient
-    est identique entre les images.
+    Génère une image PNG du nuage coloré par τ pour chaque échelle.
+    τ_min et τ_max sont calculés sur toutes les échelles → le gradient est identique entre les images.
     """
     folder = os.path.join(output_dir, obj_name)
     os.makedirs(folder, exist_ok=True)
 
-    # Bornes globales
     tau_min = float(np.nanmin(TAU))
     tau_max = float(np.nanmax(TAU))
 
@@ -77,7 +67,7 @@ def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
 
     n_scales = len(scales)
 
-    # Créer UN SEUL visualiseur réutilisé pour toutes les échelles
+    # Créer un seul visualiseur réutilisé pour toutes les échelles
     vis = o3d.visualization.Visualizer()
     vis.create_window(visible=False, width=width, height=height)
     vis.add_geometry(pcd)
@@ -85,7 +75,6 @@ def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
     opt = vis.get_render_option()
     opt.background_color = np.array([1.0, 1.0, 1.0])
     opt.point_size       = 3.0
-
     # Cadrage initial sur le nuage complet
     vis.reset_view_point(True)
 
@@ -94,7 +83,7 @@ def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
         # 1. Calculer les couleurs pour cette échelle
         colors = _tau_to_color(TAU[:, j], tau_min, tau_max)
 
-        # 2. Appliquer DIRECTEMENT sur le pcd original
+        # 2. Appliquer directement sur le pcd original
         pcd.colors = o3d.utility.Vector3dVector(colors)
 
         # 3. Notifier Open3D que la géométrie a changé
@@ -113,7 +102,7 @@ def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
 
     vis.destroy_window()
 
-    # Restaurer les couleurs originales du PCD (par propreté)
+    # Restaurer les couleurs originales du PCD
     if original_colors is not None and len(original_colors) > 0:
         pcd.colors = o3d.utility.Vector3dVector(original_colors)
     else:
@@ -124,8 +113,7 @@ def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
 
 def show_tau_colormap_interactive(pcd, TAU, scales, scale_index=0):
     """
-    Ouvre une fenêtre Open3D INTERACTIVE avec coloration τ pour
-    une échelle donnée. L'utilisateur peut tourner, zoomer, etc.
+    Ouvre une fenêtre Open3D interactive coloration τ pour une échelle donnée.
 
     Touches :
       souris    : rotation
