@@ -13,10 +13,7 @@ import os
 import numpy as np
 
 
-# ---------------------------------------------------------
 # CHEMINS
-# ---------------------------------------------------------
-
 NOTEBOOKS_ROOT = "notebooks"
 
 
@@ -41,10 +38,8 @@ def _kappa_path(obj_name):
     return os.path.join(_notebook_dir(obj_name), f"{obj_name}_kappa.txt")
 
 
-# ---------------------------------------------------------
-# VÉRIFICATION DU CACHE
-# ---------------------------------------------------------
 
+# VÉRIFICATION DU CACHE
 def notebook_exists(obj_name):
     """
     Vérifie si le dossier notebooks/<obj_name>/ existe
@@ -66,10 +61,7 @@ def notebook_exists(obj_name):
     return all(os.path.isfile(p) for p in required)
 
 
-# ---------------------------------------------------------
 # SAUVEGARDE — 4 fichiers
-# ---------------------------------------------------------
-
 def save_info(obj_name, vertices, faces, pcd, spacing, scales, masks_dict, neighborhoods_dict):
     """
     Sauvegarde objnom_info.txt :
@@ -265,10 +257,7 @@ def save_kappa(obj_name, scales, KAPPA):
     print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
-# ---------------------------------------------------------
 # SAUVEGARDE COMPLÈTE — point d'entrée principal
-# ---------------------------------------------------------
-
 def save_results(obj_name, vertices, faces, pcd,
                  spacing, scales, masks_dict, neighborhoods_dict, 
                  TAU, ETA, KAPPA, normals_np):
@@ -303,10 +292,8 @@ def save_results(obj_name, vertices, faces, pcd,
     print(f"[NOTEBOOK] 4 fichiers sauvegardés dans {d}\n")
 
 
-# ---------------------------------------------------------
-# LECTURE DU CACHE
-# ---------------------------------------------------------
 
+# LECTURE DU CACHE
 def _parse_scale_block(lines, keyword):
     """
     Parse générique d'un bloc [ECHELLE XX] dans un fichier txt.
