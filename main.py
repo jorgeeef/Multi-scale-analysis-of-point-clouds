@@ -1,7 +1,4 @@
 # main.py
-# =================================================================
-# PIPELINE PRINCIPAL — GLS Multi-échelle (Mellado et al. 2012)
-# =================================================================
 
 import os
 import sys
@@ -32,18 +29,16 @@ from geometry import (
 )
 from gls      import gls_at_point
 from notebooks import notebook_exists, save_results, load_results
-from visualization import (                                # ← NOUVEAU
+from visualization import (                                
     save_tau_colormap_all_scales,
     show_tau_colormap_interactive,
 )
 
 
-# =================================================================
 if __name__ == "__main__":
 
-    # ----------------------------------------------------------
-    # STEP 1 — SÉLECTION DU FICHIER OBJ
-    # ----------------------------------------------------------
+
+    # Step 1 — Séléction du fichier obj
     data_folder = "data"
     obj_files   = sorted(f for f in os.listdir(data_folder)
                          if f.lower().endswith(".obj"))
@@ -71,34 +66,29 @@ if __name__ == "__main__":
     obj_name  = os.path.splitext(selected)[0]
     print(f"\n[INFO] Fichier sélectionné : {path}")
 
-    # ----------------------------------------------------------
-    # STEP 2 — CHARGEMENT + NETTOYAGE  (toujours)
-    # ----------------------------------------------------------
+
+    # Step 2 — Chargement + nettoyage
     vertices, faces, obj_normals = load_obj(path)
     vertices = clean_point_cloud(vertices)
 
-    # ----------------------------------------------------------
-    # STEP 3 — NORMALES + PCD  (toujours)
-    # ----------------------------------------------------------
+
+    # Step 3 — Normales + PCD
     pcd = build_point_cloud_with_normals(vertices, faces, obj_normals)
     print_stats(vertices, faces, pcd)
 
-    # ----------------------------------------------------------
-    # STEP 4 — SAUVEGARDES PCD  (toujours, à chaque exécution)
-    # ----------------------------------------------------------
+
+    # Step 4 — Sauvegardes pcd (à chaque exécution)
     save_pointcloud_ply(pcd, obj_name)
     save_pointcloud_screenshot(pcd, obj_name, show_normals=False)
     save_pointcloud_screenshot(pcd, obj_name, show_normals=True)
 
-    # ----------------------------------------------------------
-    # STEP 5 — VISUALISATION OPEN3D  (toujours)
-    # ----------------------------------------------------------
+
+    # Step 5 — Visualization open3d  
     visualize_points(pcd)
     visualize_normals(pcd)
 
-    # ----------------------------------------------------------
-    # STEP 6 — CACHE GLS  (lecture si dispo, sinon calcul)
-    # ----------------------------------------------------------
+
+    # Step 6 — GLS  (lecture si disponible, sinon calcul)
     if notebook_exists(obj_name):
 
         print(f"[NOTEBOOK] Cache trouvé pour '{obj_name}' → lecture.")
@@ -188,10 +178,10 @@ if __name__ == "__main__":
         )
 
 
-    #COLORATION τ  (TOUJOURS, après cache ou calcul)    
+    #Coloration τ    
     save_tau_colormap_all_scales(pcd, TAU, scales, obj_name)
 
-    # Optionnel : ouvrir une fenêtre interactive pour la 1re échelle
+    # Ouvrir une fenêtre interactive pour la 1re échelle
     show_tau_colormap_interactive(pcd, TAU, scales, scale_index=0)
     show_tau_colormap_interactive(pcd, TAU, scales, scale_index=1)
     show_tau_colormap_interactive(pcd, TAU, scales, scale_index=2)
