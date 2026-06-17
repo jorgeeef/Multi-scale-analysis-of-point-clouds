@@ -264,7 +264,7 @@ def save_pointcloud_ply(pcd, obj_name, output_dir="notebooks"):
     return path
 
 
-def save_pointcloud_screenshot(pcd, obj_name, output_dir="notebooks",
+def save_pointcloud_screenshot(pcd, obj_name, output_dir="results",
                                show_normals=False, width=1024, height=768):
     """
     Capture une image PNG du nuage de points via le visualiseur Open3D
@@ -277,9 +277,9 @@ def save_pointcloud_screenshot(pcd, obj_name, output_dir="notebooks",
     ----------
     pcd          : o3d.geometry.PointCloud
     obj_name     : str
-    output_dir   : str
-    show_normals : bool   — afficher les normales sur la capture
-    width, height: int    — résolution de l'image
+    output_dir   : str   — défaut "results" (séparé des fichiers numériques)
+    show_normals : bool  — afficher les normales sur la capture
+    width, height: int   — résolution de l'image
 
     Retourne
     --------
@@ -296,17 +296,13 @@ def save_pointcloud_screenshot(pcd, obj_name, output_dir="notebooks",
     vis.create_window(visible=False, width=width, height=height)
     vis.add_geometry(pcd)
 
-    # Options de rendu
     opt = vis.get_render_option()
     opt.point_show_normal = show_normals
-    opt.background_color  = np.array([1.0, 1.0, 1.0])   # fond blanc
+    opt.background_color  = np.array([1.0, 1.0, 1.0])
     opt.point_size        = 2.0
 
-    # Ajuster la caméra automatiquement à la géométrie
     vis.poll_events()
     vis.update_renderer()
-
-    # Capture
     vis.capture_screen_image(path, do_render=True)
     vis.destroy_window()
 

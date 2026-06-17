@@ -56,20 +56,23 @@ def _tau_to_color(tau_values, abs_tau_min, abs_tau_max):
 
 
 def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
-                                 output_dir="notebooks",
+                                 output_dir="results",
                                  width=1024, height=768):
     """
     Génère une image PNG du nuage coloré par |τ| pour chaque échelle.
     |τ|_min et |τ|_max sont calculés sur toutes les échelles.
+    
+    Les images sont sauvegardées dans : results/<obj_name>/tau/
     """
-    folder = os.path.join(output_dir, obj_name)
+    # ────── Dossier results/<obj_name>/tau/ ──────
+    folder = os.path.join(output_dir, obj_name, "tau")
     os.makedirs(folder, exist_ok=True)
+    # ─────────────────────────────────────────────
 
-    # ────── BORNES SUR |τ| ──────
+    # BORNES SUR |τ|
     abs_TAU     = np.abs(TAU)
     abs_tau_min = float(np.nanmin(abs_TAU))
     abs_tau_max = float(np.nanmax(abs_TAU))
-    # ────────────────────────────
 
     # Bornes signées (pour information)
     tau_min_signed = float(np.nanmin(TAU))
@@ -78,6 +81,7 @@ def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
     print(f"[TAU-COLOR] τ signé     : min = {tau_min_signed:+.6f}   max = {tau_max_signed:+.6f}")
     print(f"[TAU-COLOR] |τ| utilisé : min = {abs_tau_min:.6f}        max = {abs_tau_max:.6f}")
     print(f"[TAU-COLOR] Gradient    : bleu (|τ| min)  →  rouge (|τ| max)")
+    print(f"[TAU-COLOR] Dossier de sortie : {folder}")
 
     original_colors = (np.asarray(pcd.colors).copy()
                        if len(pcd.colors) > 0 else None)
@@ -94,7 +98,6 @@ def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
     vis.reset_view_point(True)
 
     for j, t in enumerate(scales):
-        # Passage des bornes |τ|
         colors = _tau_to_color(TAU[:, j], abs_tau_min, abs_tau_max)
 
         pcd.colors = o3d.utility.Vector3dVector(colors)
