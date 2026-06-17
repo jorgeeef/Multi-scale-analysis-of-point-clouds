@@ -13,7 +13,7 @@ import os
 import numpy as np
 
 
-# CHEMINS
+# Chemins
 NOTEBOOKS_ROOT = "notebooks"
 
 
