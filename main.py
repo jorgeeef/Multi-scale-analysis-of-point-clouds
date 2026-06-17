@@ -3,7 +3,6 @@
 import os
 import sys
 sys.path.append("src")
-
 import numpy as np
 import open3d as o3d
 
@@ -36,7 +35,6 @@ from visualization import (
 
 
 if __name__ == "__main__":
-
 
     # Step 1 — Séléction du fichier obj
     data_folder = "data"
