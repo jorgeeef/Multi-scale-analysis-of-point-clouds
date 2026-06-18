@@ -30,7 +30,11 @@ from gls      import gls_at_point
 from notebooks import notebook_exists, save_results, load_results
 from visualization import (                                
     save_tau_colormap_all_scales,
+    save_eta_colormap_all_scales,     # ← nouveau
+    save_kappa_colormap_all_scales,
     show_tau_colormap_interactive,
+    show_eta_colormap_interactive,     # ← nouveau
+    show_kappa_colormap_interactive, 
 )
 
 
@@ -159,6 +163,14 @@ if __name__ == "__main__":
 
         print("[GLS] Calcul terminé.")
 
+
+        ETA_angle = np.full((N, S), np.nan)
+        valid_mask = ~np.isnan(ETA[:, :, 0])
+        cos_theta  = np.einsum("ijk,ik->ij", ETA, normals_np)
+        cos_theta  = np.clip(cos_theta, -1.0, 1.0)
+        ETA_angle[valid_mask] = np.degrees(np.arccos(cos_theta[valid_mask]))
+
+
         # Sauvegarde dans notebooks/
         save_results(
             obj_name           = obj_name,
@@ -175,20 +187,22 @@ if __name__ == "__main__":
             normals_np         = normals_np,
         )
 
-
-    #Coloration τ    
+    # ----------------------------------------------------------
+    # Coloration multi-descripteurs (τ, η, κ)
+    # ----------------------------------------------------------
     save_tau_colormap_all_scales(pcd, TAU, scales, obj_name)
+    save_eta_colormap_all_scales(pcd, ETA_angle, scales, obj_name)
+    save_kappa_colormap_all_scales(pcd, KAPPA, scales, obj_name)
 
-    # Ouvrir une fenêtre interactive pour la 1re échelle
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=0)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=1)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=2)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=3)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=4)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=5)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=6)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=7)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=8)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=9)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=10)
-    show_tau_colormap_interactive(pcd, TAU, scales, scale_index=11)
+
+
+    for k in range(len(scales)):
+        show_tau_colormap_interactive(pcd,   TAU,       scales, scale_index=k)
+        show_eta_colormap_interactive(pcd,   ETA_angle, scales, scale_index=k)
+        show_kappa_colormap_interactive(pcd, KAPPA,     scales, scale_index=k)
+
+
+    #for k in [0, len(scales) - 1]:
+    #    show_tau_colormap_interactive(pcd,   TAU,       scales, scale_index=k)
+    #    show_eta_colormap_interactive(pcd,   ETA_angle, scales, scale_index=k)
+    #    show_kappa_colormap_interactive(pcd, KAPPA,     scales, scale_index=k)
