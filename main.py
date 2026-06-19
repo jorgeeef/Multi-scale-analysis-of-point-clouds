@@ -123,9 +123,9 @@ if __name__ == "__main__":
 
         scales = build_scales_from_spacing(
             spacing,
-            n_scales   = 12,
+            n_scales   = 15, #12
             factor_min = 5,
-            factor_max = 15,
+            factor_max = 50, #15
             mode       = "log",
         )
         print(f"[SCALES] {np.round(scales, 4)}")
