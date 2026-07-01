@@ -3,14 +3,16 @@ figure3_curves.py
 ==================
 Reproduit l'esprit de la Figure 3(c) de Mellado et al. (2012).
 
-Trois figures séparées, une par région géométrique :
-    results/golf_ball/figure3_concavity.png
-    results/golf_ball/figure3_edge.png
-    results/golf_ball/figure3_junction.png
+Contrairement à la version précédente (3 figures par région, avec
+axes doubles τ/η + κ), cette version produit DEUX figures seulement,
+une par quantité, chacune superposant les TROIS régions
+géométriques (concavité, bord, jonction) :
 
-Chaque figure utilise DEUX AXES Y :
-    - Axe gauche  : τ (offset) et η (angle en degrés)
-    - Axe droit   : κ (courbure)
+    results/golf_ball/figure3_tau.png    (offset algébrique τ)
+    results/golf_ball/figure3_kappa.png  (courbure κ)
+
+η (angle) n'est plus tracé : il sert uniquement, en interne, au
+filtre anti-singularité lors de la sélection des points.
 
 Sélection des points (filtre anti-singularité η=90°) :
   - Concavité : 15e-25e percentile de κ (concave modéré)
@@ -26,26 +28,37 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 from notebooks import notebook_exists, load_results
 
 
-# ─────────────────────── Paramètres ─────────────────────────────
-OBJ_NAME    = "golf_ball"
-OUTPUT_DIR  = "results"
+# ─────────────────────── Paramètres généraux ─────────────────────
+OBJ_NAME   = "golf_ball"
+OUTPUT_DIR = "results"
+
+# Région -> style visuel + étiquette française (cf. figures de référence)
+REGIONS = {
+    "edge":      {"color": "#F2994A", "label": "Bord"},
+    "concavity": {"color": "#1F9D8C", "label": "Concavité"},
+    "junction":  {"color": "#7B5FD0", "label": "Jonction"},
+}
+
+CONVERGENCE_FRACTION = 0.75   # début de la bande "convergence" (fraction de [t_min, t_max])
+LABEL_MIN_GAP_FRAC   = 0.09   # écart vertical minimal entre étiquettes (fraction de l'étendue des données)
 
 
-# ─────────────────────── Sélection robuste ──────────────────────
+# ─────────────────────── Sélection robuste des points ────────────
 def select_three_points(KAPPA, ETA_angle):
     """
     Sélection robuste basée sur des percentiles MODÉRÉS, avec filtre
     anti-singularité η=90° (fit GLS instable au fond exact d'une
-    concavité isotrope où ∇s_û ≈ 0).
+    concavité isotrope où ∇s_û ≈ 0). η n'est utilisé qu'ici, pour
+    filtrer les points sains — il n'apparaît dans aucune figure.
     """
     kappa_small = KAPPA[:, 0]
     valid       = ~np.isnan(kappa_small)
 
-    # Filtre anti-singularité η
     eta_range      = np.nanmax(ETA_angle, axis=1) - np.nanmin(ETA_angle, axis=1)
     eta_healthy    = eta_range > 5.0
     eta_not_pinned = np.abs(ETA_angle[:, 0] - 90.0) > 2.0
@@ -81,109 +94,122 @@ def select_three_points(KAPPA, ETA_angle):
     return idx_concavity, idx_edge, idx_junction
 
 
-# ─────────────────────── Tracé à 2 axes Y ─────────────────────────
-def plot_single_point(scales, tau_vals, eta_vals, kappa_vals,
-                      idx, region_label, output_path):
+# ─────────────────────── Style commun aux deux figures ───────────
+def _style_axes(ax):
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_color("#AAAAAA")
+    ax.spines["bottom"].set_color("#AAAAAA")
+    ax.tick_params(colors="#888888", labelsize=10)
+    ax.set_xlabel("Échelle  t", fontsize=12, color="#888888")
+    ax.axhline(0, color="#CFCFCF", linewidth=1, zorder=0)
+
+
+def _add_convergence_band(ax, scales):
+    t_min, t_max = scales[0], scales[-1]
+    conv_start = t_min + CONVERGENCE_FRACTION * (t_max - t_min)
+    ax.axvspan(conv_start, t_max, color="#999999", alpha=0.10, zorder=0)
+    ax.text((conv_start + t_max) / 2, 0.93, "convergence",
+            transform=ax.get_xaxis_transform(),
+            ha="center", va="top", fontsize=10,
+            color="#999999", style="italic")
+
+
+def _place_labels(ax, scales, finals, value_fmt, y_data_range):
     """
-    Trace τ, η, κ pour un point sur un graphique avec DEUX AXES Y :
-      - Axe gauche  : τ (offset) + η (angle en degrés)
-      - Axe droit   : κ (courbure)
+    finals : liste de tuples (clé_région, valeur_finale)
+
+    Empile les étiquettes par ordre décroissant de valeur, à droite
+    du dernier point de chaque courbe, en imposant un écart vertical
+    minimal pour éviter tout chevauchement (utile quand les trois
+    courbes convergent vers des valeurs très proches).
     """
-    fig, ax_left = plt.subplots(figsize=(10, 6.5))
-    ax_right     = ax_left.twinx()
+    t_min, t_max = scales[0], scales[-1]
+    x_text = t_max + 0.04 * (t_max - t_min)
 
-    # ── Axe gauche : τ et η ──
-    line_tau = ax_left.plot(scales, tau_vals,
-                            color="#D62728", linewidth=2.4,
-                            marker="o", markersize=5,
-                            label="τ  (offset algébrique)")
+    ordered = sorted(finals, key=lambda kv: -kv[1])
+    min_gap = LABEL_MIN_GAP_FRAC * y_data_range
 
-    # η ramené à l'échelle de τ pour le co-tracé : on utilise l'axe
-    # gauche mais en normalisant η dans la plage [min(τ), max(τ)]
-    # via une transformation linéaire visible dans la légende.
-    # POUR ÉVITER LA CONFUSION : on met η sur son propre axe gauche
-    # secondaire mais on garde l'apparence d'un seul axe gauche, en
-    # affichant les deux directement sur le même axe avec leurs unités.
-    # Solution simple : tracer η sur l'axe gauche tel quel (les degrés
-    # vont de 0 à ~180, τ va de -0.1 à +0.1 → on tient compte).
-    # Pour préserver la lisibilité, on choisit d'avoir τ et η ensemble
-    # mais avec leur véritable amplitude — on étiquette clairement.
+    placed_y = []
+    for i, (key, val) in enumerate(ordered):
+        y = val if i == 0 else min(val, placed_y[-1] - min_gap)
+        placed_y.append(y)
 
-    # Pour la cohabitation τ + η sur l'axe gauche, on transforme η
-    # vers la plage de τ via : η_scaled = η × (τ_range / 180)
-    tau_min, tau_max = np.nanmin(tau_vals), np.nanmax(tau_vals)
-    tau_span = tau_max - tau_min if tau_max - tau_min > 1e-12 else 1.0
-    eta_scaled = (eta_vals / 180.0) * tau_span + tau_min
+    for (key, val), y in zip(ordered, placed_y):
+        color = REGIONS[key]["color"]
+        label = REGIONS[key]["label"]
+        ax.plot(t_max, val, "o", color=color, markersize=6,
+                markeredgecolor="white", markeredgewidth=0.8, zorder=5)
+        ax.text(x_text, y, f"{label}  {value_fmt.format(val)}",
+                color=color, fontsize=11.5, fontweight="bold",
+                va="center", ha="left", zorder=6)
 
-    line_eta = ax_left.plot(scales, eta_scaled,
-                            color="#1F77B4", linewidth=2.4,
-                            marker="s", markersize=5,
-                            label="η  (angle, ré-échelonné)")
 
-    # Annoter les vraies valeurs de η aux extrémités
-    ax_left.annotate(f"η = {eta_vals[0]:.1f}°",
-                     xy=(scales[0], eta_scaled[0]),
-                     xytext=(8, 8), textcoords="offset points",
-                     fontsize=9, color="#1F77B4")
-    ax_left.annotate(f"η = {eta_vals[-1]:.1f}°",
-                     xy=(scales[-1], eta_scaled[-1]),
-                     xytext=(-50, 8), textcoords="offset points",
-                     fontsize=9, color="#1F77B4")
+# ─────────────────────── Tracé combiné (1 quantité, 3 régions) ───
+def plot_combined(scales, curves, title_symbol, title_color,
+                  value_fmt, output_path):
+    """
+    curves : dict {clé_région: array(n_scales,)}  -- ex. TAU[idx,:] ou KAPPA[idx,:]
+    """
+    fig, ax = plt.subplots(figsize=(8.5, 5.5))
 
-    ax_left.set_xlabel(r"Échelle  $t$", fontsize=13)
-    ax_left.set_ylabel("τ  (offset algébrique)", fontsize=12, color="#D62728")
-    ax_left.tick_params(axis="y", labelcolor="#D62728")
-    ax_left.grid(True, linestyle="--", alpha=0.4)
-    ax_left.axhline(0, color="black", linewidth=0.5, alpha=0.3)
+    for key, vals in curves.items():
+        ax.plot(scales, vals, color=REGIONS[key]["color"],
+                linewidth=2.6, solid_capstyle="round", zorder=3)
 
-    # ── Axe droit : κ ──
-    line_kappa = ax_right.plot(scales, kappa_vals,
-                               color="#2CA02C", linewidth=2.4,
-                               marker="^", markersize=5,
-                               label="κ  (courbure signée)")
-    ax_right.set_ylabel("κ  (courbure signée)",
-                        fontsize=12, color="#2CA02C")
-    ax_right.tick_params(axis="y", labelcolor="#2CA02C")
-    ax_right.axhline(0, color="#2CA02C", linewidth=0.5,
-                     alpha=0.3, linestyle=":")
+    # Étendue verticale réelle des courbes (toutes échelles, toutes régions)
+    all_vals     = np.concatenate(list(curves.values()))
+    y_lo, y_hi   = float(np.nanmin(all_vals)), float(np.nanmax(all_vals))
+    y_data_range = (y_hi - y_lo) if (y_hi - y_lo) > 1e-9 else 1.0
+    # Marge verticale pour que les étiquettes empilées ne touchent jamais l'axe
+    ax.set_ylim(y_lo - 0.20 * y_data_range, y_hi + 0.12 * y_data_range)
 
-    # ── Titre et légende ──
-    fig.suptitle(
-        f"Évolution multi-échelle  —  {region_label}\n"
-        f"(point p{idx:06d})",
-        fontsize=13, y=0.99
-    )
+    _add_convergence_band(ax, scales)
+    _style_axes(ax)
 
-    eta_range_str = f"[{np.nanmin(eta_vals):.1f}°, {np.nanmax(eta_vals):.1f}°]"
+    t_min, t_max = scales[0], scales[-1]
+    # Graduations confinées à la plage réelle des données (avant d'élargir
+    # xlim pour laisser de la place aux étiquettes à droite)
+    xticks = [tk for tk in MaxNLocator(nbins=6).tick_values(t_min, t_max)
+              if t_min - 1e-9 <= tk <= t_max + 1e-9]
+    ax.set_xticks(xticks)
+    ax.set_xlim(t_min - 0.02 * (t_max - t_min), t_max + 0.34 * (t_max - t_min))
 
-    # Combiner les légendes des 2 axes
-    lines = line_tau + line_eta + line_kappa
-    labels = [
-        f"τ  ∈ [{tau_min:+.3f}, {tau_max:+.3f}]",
-        f"η  ∈ {eta_range_str}  (axe gauche, ré-échelonné depuis [0°,180°])",
-        f"κ  ∈ [{np.nanmin(kappa_vals):+.2f}, {np.nanmax(kappa_vals):+.2f}]  (axe droit)",
-    ]
-    ax_left.legend(lines, labels, loc="best", fontsize=10, framealpha=0.95)
+    finals = [(key, float(vals[-1])) for key, vals in curves.items()]
+    _place_labels(ax, scales, finals, value_fmt, y_data_range)
 
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    ax.text(0.0, 1.04, title_symbol, transform=ax.transAxes,
+            fontsize=22, color=title_color, fontweight="bold",
+            ha="left", va="bottom")
+
+    # Pas de tight_layout : il recalcule les marges sans tenir compte des
+    # étiquettes posées hors de la zone d'axes ; bbox_inches="tight" au
+    # moment de la sauvegarde s'en charge correctement.
+    plt.savefig(output_path, dpi=150, bbox_inches="tight", pad_inches=0.2)
     plt.close()
     print(f"[FIGURE3]  Sauvegardé : {output_path}")
 
 
-# ─────────────────────── Sauvegarde TXT ─────────────────────────
-def save_values_txt(scales, TAU, ETA, KAPPA, idx, region_label, output_path):
+# ─────────────────────── Sauvegarde des valeurs (TXT) ────────────
+def save_values_txt(scales, TAU, KAPPA, idx_by_region, output_path):
     with open(output_path, "w") as f:
-        f.write(f"# Point sélectionné : p{idx:06d}\n")
-        f.write(f"# Région : {region_label}\n")
-        f.write(f"# n_scales : {len(scales)}\n\n")
+        f.write("# Valeurs sélectionnées pour la Figure 3 (τ, κ)\n")
+        for key, idx in idx_by_region.items():
+            f.write(f"# {REGIONS[key]['label']:<10} -> point p{idx:06d}\n")
+        f.write("\n")
 
-        f.write(f"  {'t':>10}  {'τ':>12}  {'η°':>10}  {'κ':>12}\n")
-        f.write("  " + "-" * 50 + "\n")
+        header = f"  {'t':>10}"
+        for key in idx_by_region:
+            label = REGIONS[key]["label"]
+            header += f"  {label + '_tau':>16}  {label + '_kappa':>16}"
+        f.write(header + "\n")
+        f.write("  " + "-" * (len(header) - 2) + "\n")
 
         for j, t in enumerate(scales):
-            f.write(f"  {t:>10.4f}  {TAU[idx,j]:>+12.6f}  "
-                    f"{ETA[idx,j]:>10.4f}  {KAPPA[idx,j]:>+12.4f}\n")
+            row = f"  {t:>10.4f}"
+            for key, idx in idx_by_region.items():
+                row += f"  {TAU[idx, j]:>+16.6f}  {KAPPA[idx, j]:>+16.4f}"
+            f.write(row + "\n")
 
 
 # ─────────────────────────── Main ─────────────────────────────────
@@ -198,49 +224,41 @@ if __name__ == "__main__":
     scales    = results["scales"]
     TAU       = results["TAU"]
     KAPPA     = results["KAPPA"]
-    ETA_angle = results["ETA_angle"]
+    ETA_angle = results["ETA_angle"]   # utilisé uniquement par le filtre de sélection
 
-    print(f"[FIGURE3] {len(scales)} échelles, "
-          f"t ∈ [{scales[0]:.3f}, {scales[-1]:.3f}]")
+    print(f"[FIGURE3] {len(scales)} échelles, t ∈ [{scales[0]:.3f}, {scales[-1]:.3f}]")
     print(f"[FIGURE3] {TAU.shape[0]} points\n")
 
     idx_conc, idx_edge, idx_junc = select_three_points(KAPPA, ETA_angle)
+    idx_by_region = {"concavity": idx_conc, "edge": idx_edge, "junction": idx_junc}
 
-    print(f"\n[FIGURE3] Points sélectionnés :")
-    print(f"  Concavité : p{idx_conc:06d}  "
-          f"κ_s01 = {KAPPA[idx_conc,0]:+.3f}  "
-          f"η_s01 = {ETA_angle[idx_conc,0]:.1f}°")
-    print(f"  Edge      : p{idx_edge:06d}  "
-          f"κ_s01 = {KAPPA[idx_edge,0]:+.3f}  "
-          f"η_s01 = {ETA_angle[idx_edge,0]:.1f}°")
-    print(f"  Junction  : p{idx_junc:06d}  "
-          f"κ_s01 = {KAPPA[idx_junc,0]:+.3f}  "
-          f"η_s01 = {ETA_angle[idx_junc,0]:.1f}°\n")
+    print("\n[FIGURE3] Points sélectionnés :")
+    for key, idx in idx_by_region.items():
+        print(f"  {REGIONS[key]['label']:<10} p{idx:06d}  "
+              f"κ_s01 = {KAPPA[idx, 0]:+.3f}  η_s01 = {ETA_angle[idx, 0]:.1f}°")
 
     output_folder = os.path.join(OUTPUT_DIR, OBJ_NAME)
     os.makedirs(output_folder, exist_ok=True)
 
-    points = [
-        (idx_conc, "Concavité  (fond d'alvéole)",   "concavity"),
-        (idx_edge, "Edge  (bord d'alvéole)",        "edge"),
-        (idx_junc, "Junction  (entre alvéoles)",    "junction"),
-    ]
+    # ── Figure τ : les trois régions superposées ──
+    tau_curves = {key: TAU[idx, :] for key, idx in idx_by_region.items()}
+    plot_combined(
+        scales, tau_curves,
+        title_symbol="τ", title_color="#D9534F",
+        value_fmt="{:+.3f}",
+        output_path=os.path.join(output_folder, "figure3_tau.png"),
+    )
 
-    for idx, label, fname in points:
-        png_path = os.path.join(output_folder, f"figure3_{fname}.png")
-        txt_path = os.path.join(output_folder, f"figure3_{fname}.txt")
+    # ── Figure κ : les trois régions superposées ──
+    kappa_curves = {key: KAPPA[idx, :] for key, idx in idx_by_region.items()}
+    plot_combined(
+        scales, kappa_curves,
+        title_symbol="K", title_color="#178A8A",
+        value_fmt="{:+.2f}",
+        output_path=os.path.join(output_folder, "figure3_kappa.png"),
+    )
 
-        plot_single_point(
-            scales      = scales,
-            tau_vals    = TAU[idx, :],
-            eta_vals    = ETA_angle[idx, :],
-            kappa_vals  = KAPPA[idx, :],
-            idx         = idx,
-            region_label= label,
-            output_path = png_path,
-        )
+    save_values_txt(scales, TAU, KAPPA, idx_by_region,
+                    os.path.join(output_folder, "figure3_values.txt"))
 
-        save_values_txt(scales, TAU, ETA_angle, KAPPA,
-                        idx, label, txt_path)
-
-    print(f"\n[FIGURE3] 3 figures + 3 fichiers de valeurs sauvegardés.")
+    print("\n[FIGURE3] 2 figures (τ, κ) + 1 fichier de valeurs sauvegardés.")
