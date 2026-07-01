@@ -10,6 +10,14 @@ cd Multi-scale-analysis-of-point-clouds
 # STEP 3 - open it in VS Code
 code .
 
+
+
+#sudo apt update
+#sudo apt install python3.12-venv
+#python3 -m venv venv
+
+
+
 # STEP 4 - recreate environment 
 python -m venv venv
 
