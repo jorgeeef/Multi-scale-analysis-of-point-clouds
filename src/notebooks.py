@@ -38,12 +38,20 @@ def _kappa_path(obj_name):
     return os.path.join(_notebook_dir(obj_name), f"{obj_name}_kappa.txt")
 
 
+def _phi_path(obj_name):
+    return os.path.join(_notebook_dir(obj_name), f"{obj_name}_phi.txt")
+
+
+def _nu_path(obj_name):
+    return os.path.join(_notebook_dir(obj_name), f"{obj_name}_nu.txt")
+
+
 
 # VÉRIFICATION DU CACHE
 def notebook_exists(obj_name):
     """
     Vérifie si le dossier notebooks/<obj_name>/ existe
-    ET contient les 4 fichiers de résultats attendus.
+    ET contient les 6 fichiers de résultats attendus.
 
     Retourne True uniquement si tout est présent et lisible.
     Un dossier vide ou incomplet est traité comme absent.
@@ -57,6 +65,8 @@ def notebook_exists(obj_name):
         _tau_path(obj_name),
         _eta_path(obj_name),
         _kappa_path(obj_name),
+        _phi_path(obj_name),
+        _nu_path(obj_name),
     ]
     return all(os.path.isfile(p) for p in required)
 
@@ -257,12 +267,109 @@ def save_kappa(obj_name, scales, KAPPA):
     print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
+def save_phi(obj_name, scales, PHI):
+    """
+    Sauvegarde objnom_phi.txt :
+        - nombre d'échelles
+        - pour chaque échelle : valeur de t puis les N valeurs de ϕ
+
+    ϕ ∈ [0,1] : qualité d'alignement du champ ajusté avec les normales
+    d'entrée. ϕ = 1 → fit parfait (surface lisse, normales cohérentes).
+    """
+    path     = _phi_path(obj_name)
+    n_scales = len(scales)
+    n_points = PHI.shape[0]
+
+    with open(path, "w", encoding="utf-8") as f:
+
+        f.write(f"# PHI — fitness ϕ (qualité d'alignement du fit)\n")
+        f.write(f"# Mellado et al. (2012) Section 4.1 : ϕ = Σwi(t)∇su(qi)·ni / Σwi(t)\n")
+        f.write(f"# ϕ = 1 : fit parfait   ϕ ≈ 0 : fit incohérent (bruit, bord, normales incohérentes)\n")
+        f.write(f"#\n")
+        f.write(f"n_scales  = {n_scales}\n")
+        f.write(f"n_points  = {n_points}\n\n")
+
+        for j, t in enumerate(scales):
+            col     = PHI[:, j]
+            valid   = ~np.isnan(col)
+            n_valid = int(np.sum(valid))
+
+            mean_phi = float(np.nanmean(col))
+            std_phi  = float(np.nanstd(col))
+
+            f.write(f"[ECHELLE {j+1:02d}]\n")
+            f.write(f"  t           = {t:.6f}\n")
+            f.write(f"  n_valid     = {n_valid}/{n_points}\n")
+            f.write(f"  mean(phi)   = {mean_phi:.6f}\n")
+            f.write(f"  std(phi)    = {std_phi:.6f}\n")
+            f.write(f"  valeurs :\n")
+
+            for i, v in enumerate(col):
+                if np.isnan(v):
+                    f.write(f"    p{i:06d}  NaN\n")
+                else:
+                    f.write(f"    p{i:06d}  {v:.6f}\n")
+            f.write("\n")
+
+    print(f"[NOTEBOOK] Sauvegardé : {path}")
+
+
+def save_nu(obj_name, scales, NU):
+    """
+    Sauvegarde objnom_nu.txt :
+        - nombre d'échelles
+        - pour chaque échelle : valeur de t puis les N valeurs de ν
+
+    ν(p,t) >= 0 : variation géométrique (Mellado et al. 2012, Eq. 5).
+    ν faible → échelle "pertinente" (descripteur stable). ν=0 pour une
+    forme parfaitement scale-invariante (ex. sphère ou plan idéal).
+    """
+    path     = _nu_path(obj_name)
+    n_scales = len(scales)
+    n_points = NU.shape[0]
+
+    with open(path, "w", encoding="utf-8") as f:
+
+        f.write(f"# NU — variation géométrique ν(p,t)\n")
+        f.write(f"# Mellado et al. (2012) Section 4.2, Eq. 5 :\n")
+        f.write(f"#   ν(p,t) = (dτ/dt)² + (t·dη/dt)² + (t²·dκ/dt)²\n")
+        f.write(f"# ν faible : échelle pertinente (descripteur stable)\n")
+        f.write(f"# ν élevé  : échelle instable / structure fine en train de changer\n")
+        f.write(f"#\n")
+        f.write(f"n_scales  = {n_scales}\n")
+        f.write(f"n_points  = {n_points}\n\n")
+
+        for j, t in enumerate(scales):
+            col     = NU[:, j]
+            valid   = ~np.isnan(col)
+            n_valid = int(np.sum(valid))
+
+            mean_nu = float(np.nanmean(col))
+            std_nu  = float(np.nanstd(col))
+
+            f.write(f"[ECHELLE {j+1:02d}]\n")
+            f.write(f"  t           = {t:.6f}\n")
+            f.write(f"  n_valid     = {n_valid}/{n_points}\n")
+            f.write(f"  mean(nu)    = {mean_nu:.6f}\n")
+            f.write(f"  std(nu)     = {std_nu:.6f}\n")
+            f.write(f"  valeurs :\n")
+
+            for i, v in enumerate(col):
+                if np.isnan(v):
+                    f.write(f"    p{i:06d}  NaN\n")
+                else:
+                    f.write(f"    p{i:06d}  {v:.6f}\n")
+            f.write("\n")
+
+    print(f"[NOTEBOOK] Sauvegardé : {path}")
+
+
 # SAUVEGARDE COMPLÈTE — point d'entrée principal
 def save_results(obj_name, vertices, faces, pcd,
-                 spacing, scales, masks_dict, neighborhoods_dict, 
-                 TAU, ETA, KAPPA, normals_np):
+                 spacing, scales, masks_dict, neighborhoods_dict,
+                 TAU, ETA, KAPPA, PHI, NU, normals_np):
     """
-    Crée le dossier notebooks/<obj_name>/ et sauvegarde les 4 fichiers.
+    Crée le dossier notebooks/<obj_name>/ et sauvegarde les 6 fichiers.
 
     Appelé depuis main.py après la boucle GLS.
 
@@ -278,6 +385,8 @@ def save_results(obj_name, vertices, faces, pcd,
     TAU         : np.ndarray   — (N, S)
     ETA         : np.ndarray   — (N, S, 3)
     KAPPA       : np.ndarray   — (N, S)
+    PHI         : np.ndarray   — (N, S)
+    NU          : np.ndarray   — (N, S)
     normals_np  : np.ndarray   — (N, 3)
     """
     d = _notebook_dir(obj_name)
@@ -288,8 +397,10 @@ def save_results(obj_name, vertices, faces, pcd,
     save_tau(obj_name, scales, TAU)
     save_eta(obj_name, scales, ETA, normals_np)
     save_kappa(obj_name, scales, KAPPA)
+    save_phi(obj_name, scales, PHI)
+    save_nu(obj_name, scales, NU)
 
-    print(f"[NOTEBOOK] 4 fichiers sauvegardés dans {d}\n")
+    print(f"[NOTEBOOK] 6 fichiers sauvegardés dans {d}\n")
 
 
 
@@ -354,7 +465,7 @@ def _read_descriptor_file(filepath):
 
 def load_results(obj_name):
     """
-    Lit les 4 fichiers de résultats depuis notebooks/<obj_name>/.
+    Lit les 6 fichiers de résultats depuis notebooks/<obj_name>/.
 
     Retourne
     --------
@@ -362,6 +473,8 @@ def load_results(obj_name):
         'scales'  : np.ndarray (S,)
         'TAU'     : np.ndarray (N, S)
         'KAPPA'   : np.ndarray (N, S)
+        'PHI'     : np.ndarray (N, S)
+        'NU'      : np.ndarray (N, S)
         'ETA_angle': np.ndarray (N, S)  — angles en degrés η vs n_i
         'info'    : str                 — contenu brut de _info.txt
     """
@@ -381,14 +494,24 @@ def load_results(obj_name):
     # ETA (angles en degrés)
     scales_eta, ETA_angle = _read_descriptor_file(_eta_path(obj_name))
 
+    # PHI
+    scales_phi, PHI = _read_descriptor_file(_phi_path(obj_name))
+
+    # NU
+    scales_nu, NU = _read_descriptor_file(_nu_path(obj_name))
+
     print(f"[NOTEBOOK] TAU   chargé : {TAU.shape}")
     print(f"[NOTEBOOK] KAPPA chargé : {KAPPA.shape}")
+    print(f"[NOTEBOOK] PHI   chargé : {PHI.shape}")
+    print(f"[NOTEBOOK] NU    chargé : {NU.shape}")
     print(f"[NOTEBOOK] ETA   chargé : {ETA_angle.shape}")
 
     return {
         "scales"    : scales_tau,
         "TAU"       : TAU,
         "KAPPA"     : KAPPA,
+        "PHI"       : PHI,
+        "NU"        : NU,
         "ETA_angle" : ETA_angle,
         "info"      : info,
     }

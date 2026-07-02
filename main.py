@@ -28,13 +28,15 @@ from geometry import (
 )
 from gls      import gls_at_point
 from notebooks import notebook_exists, save_results, load_results
-from visualization import (                                
+from visualization import (
     save_tau_colormap_all_scales,
     save_eta_colormap_all_scales,     # ← nouveau
     save_kappa_colormap_all_scales,
+    save_nu_colormap_all_scales,
     show_tau_colormap_interactive,
     show_eta_colormap_interactive,     # ← nouveau
-    show_kappa_colormap_interactive, 
+    show_kappa_colormap_interactive,
+    show_nu_colormap_interactive,
 )
 
 
@@ -98,11 +100,15 @@ if __name__ == "__main__":
         scales    = results["scales"]
         TAU       = results["TAU"]
         KAPPA     = results["KAPPA"]
+        PHI       = results["PHI"]
+        NU        = results["NU"]
         ETA_angle = results["ETA_angle"]
 
         print(f"       scales : {np.round(scales, 4)}")
         print(f"       TAU    : {TAU.shape}")
         print(f"       KAPPA  : {KAPPA.shape}")
+        print(f"       PHI    : {PHI.shape}")
+        print(f"       NU     : {NU.shape}")
         print(f"       ETA°   : {ETA_angle.shape}")
 
     else:
@@ -146,6 +152,7 @@ if __name__ == "__main__":
         TAU   = np.full((N, S),    np.nan)
         KAPPA = np.full((N, S),    np.nan)
         PHI   = np.full((N, S),    np.nan)
+        NU    = np.full((N, S),    np.nan)
         ETA   = np.full((N, S, 3), np.nan)
 
         for j, t in enumerate(scales):
@@ -154,11 +161,13 @@ if __name__ == "__main__":
                 if not masks[j][i]:
                     continue
                 idx    = neighborhoods[j][i]
-                result = gls_at_point(p, vertices[idx], normals_np[idx], t)
+                result = gls_at_point(p, vertices[idx], normals_np[idx], t,
+                                      with_variation=True)
                 if result:
                     TAU[i, j]   = result["tau"]
                     KAPPA[i, j] = result["kappa"]
                     PHI[i, j]   = result["phi"]
+                    NU[i, j]    = result["nu"]
                     ETA[i, j]   = result["eta"]
 
         print("[GLS] Calcul terminé.")
@@ -184,15 +193,18 @@ if __name__ == "__main__":
             TAU                = TAU,
             ETA                = ETA,
             KAPPA              = KAPPA,
+            PHI                = PHI,
+            NU                 = NU,
             normals_np         = normals_np,
         )
 
     # ----------------------------------------------------------
-    # Coloration multi-descripteurs (τ, η, κ)
+    # Coloration multi-descripteurs (τ, η, κ, ν)
     # ----------------------------------------------------------
     save_tau_colormap_all_scales(pcd, TAU, scales, obj_name)
     save_eta_colormap_all_scales(pcd, ETA_angle, scales, obj_name)
     save_kappa_colormap_all_scales(pcd, KAPPA, scales, obj_name)
+    save_nu_colormap_all_scales(pcd, NU, scales, obj_name)
 
 
 
@@ -200,9 +212,11 @@ if __name__ == "__main__":
         show_tau_colormap_interactive(pcd,   TAU,       scales, scale_index=k)
         show_eta_colormap_interactive(pcd,   ETA_angle, scales, scale_index=k)
         show_kappa_colormap_interactive(pcd, KAPPA,     scales, scale_index=k)
+        show_nu_colormap_interactive(pcd,    NU,        scales, scale_index=k)
 
 
     #for k in [0, len(scales) - 1]:
     #    show_tau_colormap_interactive(pcd,   TAU,       scales, scale_index=k)
     #    show_eta_colormap_interactive(pcd,   ETA_angle, scales, scale_index=k)
     #    show_kappa_colormap_interactive(pcd, KAPPA,     scales, scale_index=k)
+    #    show_nu_colormap_interactive(pcd,    NU,        scales, scale_index=k)

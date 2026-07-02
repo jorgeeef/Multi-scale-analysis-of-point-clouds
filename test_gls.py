@@ -8,7 +8,8 @@ import sys
 sys.path.append("src")
 
 import numpy as np
-from gls import gls_at_point, wendland_weights
+from gls import (gls_at_point, wendland_weights,
+                 fit_algebraic_sphere, pratt_normalize, extract_descriptors)
 
 # Constantes de tolérance
 TOL_EXACT  = 1e-5   # pour les cas analytiquement parfaits
@@ -290,6 +291,94 @@ check("κ = 0 à toutes les échelles (plan)", all_ok_kappa,
       got="OK" if all_ok_kappa else "ECHEC", expected="κ=0 partout")
 check("ϕ = 1 à toutes les échelles (plan)", all_ok_phi,
       got="OK" if all_ok_phi else "ECHEC", expected="ϕ=1 partout")
+
+
+# TEST 9 : SPHÈRE — MAGNITUDE EXACTE DE κ (pas seulement le signe)
+print("\n" + "="*55)
+print("TEST 9 — Sphère : magnitude exacte de κ = 1/R")
+print("  Régression : détecte tout biais multiplicatif dans le")
+print("  fitting (ex. confusion poids normalisés/non-normalisés)")
+print("="*55)
+
+for R_test in [1.0, 2.0, 4.0]:
+    pts_r, nrms_r = make_sphere(R_test, n=3000)
+    p_r = np.array([R_test, 0., 0.])
+    t_r = 0.5 * R_test
+    nb_r, mask_r = get_neighbors(pts_r, p_r, t_r)
+    res = gls_at_point(p_r, nb_r, nrms_r[mask_r], t_r)
+    if res:
+        check(f"κ ≈ 1/R pour R={R_test}",
+              abs(res["kappa"] - 1.0/R_test) < TOL_EXACT,
+              got=f"{res['kappa']:.6f}", expected=f"{1.0/R_test:.6f}", tol=TOL_EXACT)
+        check(f"τ ≈ 0 pour R={R_test} (p sur la surface)",
+              abs(res["tau"]) < TOL_EXACT,
+              got=f"{res['tau']:.6f}", expected=0.0, tol=TOL_EXACT)
+
+
+# TEST 10 : DÉRIVÉES D'ÉCHELLE ANALYTIQUES vs DIFFÉRENCES FINIES
+print("\n" + "="*55)
+print("TEST 10 — Dérivées d'échelle (Section 4.2) vs différences finies")
+print("  dτ/dt, dη/dt, dκ/dt analytiques doivent coïncider avec une")
+print("  différence finie centrée sur le pipeline non-dérivé")
+print("="*55)
+
+def _finite_diff_derivatives(p, neighbors, normals, t, h=1e-5):
+    def plain(tt):
+        u  = fit_algebraic_sphere(p, neighbors, normals, tt)
+        uh = pratt_normalize(u)
+        return extract_descriptors(uh, p)
+    tau_p, eta_p, kappa_p = plain(t + h)
+    tau_m, eta_m, kappa_m = plain(t - h)
+    return (tau_p - tau_m) / (2*h), (eta_p - eta_m) / (2*h), (kappa_p - kappa_m) / (2*h)
+
+np.random.seed(123)
+p_rand = np.array([0.1, -0.2, 0.05])
+nb_rand = p_rand + np.random.randn(40, 3) * 0.5
+nrms_rand = np.random.randn(40, 3)
+nrms_rand /= np.linalg.norm(nrms_rand, axis=1, keepdims=True)
+
+res_deriv = gls_at_point(p_rand, nb_rand, nrms_rand, 1.0, with_variation=True)
+if res_deriv:
+    dtau_fd, deta_fd, dkappa_fd = _finite_diff_derivatives(p_rand, nb_rand, nrms_rand, 1.0)
+
+    check("dτ/dt analytique ≈ différence finie",
+          abs(res_deriv["dtau_dt"] - dtau_fd) < 1e-4,
+          got=f"{res_deriv['dtau_dt']:.6f}", expected=f"{dtau_fd:.6f}", tol=1e-4)
+    check("dκ/dt analytique ≈ différence finie",
+          abs(res_deriv["dkappa_dt"] - dkappa_fd) < 1e-4,
+          got=f"{res_deriv['dkappa_dt']:.6f}", expected=f"{dkappa_fd:.6f}", tol=1e-4)
+    check("dη/dt analytique ≈ différence finie",
+          np.linalg.norm(res_deriv["deta_dt"] - deta_fd) < 1e-4,
+          got=np.round(res_deriv["deta_dt"], 5), expected=np.round(deta_fd, 5), tol=1e-4)
+    check("ν(p,t) >= 0",
+          res_deriv["nu"] >= 0,
+          got=f"{res_deriv['nu']:.6f}", expected=">= 0")
+
+
+# TEST 11 : ν(p,t) = 0 SUR DES FORMES PARFAITEMENT SCALE-INVARIANTES
+print("\n" + "="*55)
+print("TEST 11 — ν(p,t) sur sphère/plan parfaits (scale-invariants)")
+print("  κ=1/R constant, τ=0 constant, η constant ⟹ ν doit être ≈ 0")
+print("="*55)
+
+R_nu = 2.0
+pts_nu, nrms_nu = make_sphere(R_nu, n=2000)
+p_nu = np.array([R_nu, 0., 0.])
+nb_nu, mask_nu = get_neighbors(pts_nu, p_nu, 1.2)
+res_nu_sphere = gls_at_point(p_nu, nb_nu, nrms_nu[mask_nu], 1.2, with_variation=True)
+if res_nu_sphere:
+    check("ν ≈ 0 sur sphère parfaite",
+          res_nu_sphere["nu"] < TOL_EXACT,
+          got=f"{res_nu_sphere['nu']:.8f}", expected="≈ 0", tol=TOL_EXACT)
+
+pts_pl_nu, nrms_pl_nu = make_plane(n=400)
+p_pl_nu = np.zeros(3)
+nb_pl_nu, mask_pl_nu = get_neighbors(pts_pl_nu, p_pl_nu, 1.5)
+res_nu_plane = gls_at_point(p_pl_nu, nb_pl_nu, nrms_pl_nu[mask_pl_nu], 1.5, with_variation=True)
+if res_nu_plane:
+    check("ν ≈ 0 sur plan parfait",
+          res_nu_plane["nu"] < TOL_EXACT,
+          got=f"{res_nu_plane['nu']:.8f}", expected="≈ 0", tol=TOL_EXACT)
 
 # BILAN
 print("\n" + "="*55)
