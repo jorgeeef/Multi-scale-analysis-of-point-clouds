@@ -1,6 +1,9 @@
 How to clone this project:
 ============================================================================================
 
+# sudo apt install git
+
+
 # STEP 1 - open cmd in the folder where you need keep the project and clone the GitHub repo: 
 git clone https://github.com/jorgeeef/Multi-scale-analysis-of-point-clouds.git
 
@@ -11,11 +14,8 @@ cd Multi-scale-analysis-of-point-clouds
 code .
 
 
-
 #sudo apt update
 #sudo apt install python3.12-venv
-#python3 -m venv venv
-
 
 
 # STEP 4 - recreate environment 
