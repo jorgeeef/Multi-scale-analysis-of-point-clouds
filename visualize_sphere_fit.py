@@ -63,14 +63,14 @@ def pick_reference_points(vertices, normals_np, tree, t_ref):
 
 def main():
     print(f"[SPHERE-FIT] Chargement : {OBJ_PATH}")
-    vertices, faces, obj_normals = load_obj(OBJ_PATH)
-    vertices = clean_point_cloud(vertices)
+    vertices, faces, obj_normals = load_obj(OBJ_PATH) # Charger le modèle du crâne
+    vertices = clean_point_cloud(vertices) # Nettoyer le nuage de points
 
-    pcd = build_point_cloud_with_normals(vertices, faces, obj_normals)
-    normals_np = np.asarray(pcd.normals)
+    pcd = build_point_cloud_with_normals(vertices, faces, obj_normals) # Calculer les normales des points.
+    normals_np = np.asarray(pcd.normals) 
 
-    tree = build_kdtree(vertices)
-    spacing = estimate_mean_spacing(vertices)
+    tree = build_kdtree(vertices) # Construire la structure de recherche des voisins.
+    spacing = estimate_mean_spacing(vertices) # Calculer l'espacement moyen des points.
     print(f"[SPHERE-FIT] {len(vertices)} points, espacement moyen = {spacing:.5f}")
 
     # 3 échelles : petite / moyenne / grande (facteurs de l'espacement)
@@ -83,7 +83,8 @@ def main():
           f"{ {k: round(v,4) for k,v in scales.items()} }")
 
     labeled_points = pick_reference_points(vertices, normals_np, tree,
-                                           t_ref=scales["petite"])
+                                           t_ref=scales["petite"]) # Choisir un point concave, convexe et quasi-plan.
+
     print(f"[SPHERE-FIT] Points choisis : "
           f"{ {k: f'p{i:06d}' for k,i in labeled_points.items()} }")
 
@@ -100,20 +101,20 @@ def main():
     for point_label, i in labeled_points.items():
         p = vertices[i]
         for scale_label, t in scales.items():
-            idx = tree.query_ball_point(p, r=t)
+            idx = tree.query_ball_point(p, r=t) # Trouver les voisins du point.
             if len(idx) < 12:
                 print(f"  [SKIP] {point_label} p{i:06d} @ {scale_label} "
                       f"(t={t:.4f}) : trop peu de voisins ({len(idx)})")
                 continue
 
             nb, nr = vertices[idx], normals_np[idx]
-            res = gls_at_point(p, nb, nr, t, with_variation=True)
+            res = gls_at_point(p, nb, nr, t, with_variation=True)  # Ajuster une sphère avec la méthode GLS.
             if res is None:
                 print(f"  [SKIP] {point_label} p{i:06d} @ {scale_label} "
                       f"(t={t:.4f}) : fit échoué")
                 continue
 
-            sphere = sphere_center_radius(res["u_hat"])
+            sphere = sphere_center_radius(res["u_hat"]) # Calculer le centre et le rayon de la sphère.
             tag = f"p{i:06d}_{point_label}_{scale_label}_t{t:.4f}"
 
             if sphere is None:
@@ -130,7 +131,7 @@ def main():
                 show_sphere_fit_interactive(
                     p=p, neighbor_points=nb, center=center, radius=radius,
                     tag=tag, context_points=context_points,
-                )
+                ) # Afficher la sphère ajustée.
 
             eta_str = np.array2string(res["eta"], precision=4)
 
@@ -140,9 +141,9 @@ def main():
                 "tau": res["tau"], "eta": eta_str, "kappa": res["kappa"],
                 "phi": res["phi"], "nu": res["nu"],
                 "center": center_str, "radius": radius_str,
-            })
+            })  # Enregistrer les valeurs calculées.
 
-    with open(table_path, "w", encoding="utf-8") as f:
+    with open(table_path, "w", encoding="utf-8") as f: # Sauvegarder les résultats dans un fichier texte.
         f.write(f"# Sphères ajustées GLS — {OBJ_NAME}\n")
         f.write(f"# Points : {', '.join(f'{k}=p{i:06d}' for k,i in labeled_points.items())}\n")
         f.write(f"# Mellado et al. (2012), reproduction style Figures 1/3(a-b)/5\n")

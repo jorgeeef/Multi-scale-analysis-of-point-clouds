@@ -511,50 +511,25 @@ def geometric_variation(dtau_dt, deta_dt, dkappa_dt, t):
     return float(nu)
 
 
-# 7. PIPELINE GLS COMPLET POUR UN POINT
+# Appliquer le pipeline GLS complet pour un point p.
 
 def gls_at_point(p, neighbors, normals, t, with_variation=False):
-    """
-    Pipeline GLS complet pour un point p à l'échelle t.
-
-    Enchaîne :
-        1. fit_algebraic_sphere  — WLS avec normales (Eq. 7)
-        2. pratt_normalize       — unicité (Eq. 3)
-        3. extract_descriptors   — τ, η, κ (Eq. 4)
-        4. compute_fitness       — ϕ (Section 4.1)
-
-    Si with_variation=True, calcule en plus — analytiquement, en
-    différentiant toute la chaîne 1-3 par rapport à t (Section 4.2) —
-    les dérivées d'échelle dτ/dt, dη/dt, dκ/dt et la variation
-    géométrique ν(p,t) (Eq. 5).
-
-    Paramètres
-    ----------
-    p              : np.ndarray, shape (3,)
-    neighbors      : np.ndarray, shape (K, 3)
-    normals        : np.ndarray, shape (K, 3)
-    t              : float
-    with_variation : bool — calcule aussi dτ/dt, dη/dt, dκ/dt, ν
-
-    Retourne
-    --------
-    dict : { 'tau', 'eta', 'kappa', 'phi', 'u', 'u_hat' }, et en plus
-           { 'dtau_dt', 'deta_dt', 'dkappa_dt', 'nu' } si with_variation.
-    None : si le fitting échoue à n'importe quelle étape.
-    """
     if with_variation:
         u, du_dt = fit_algebraic_sphere_with_derivative(p, neighbors, normals, t)
+        # Ajuster la sphère et calculer sa dérivée.
         if u is None:
-            return None
+            return None 
 
         u_hat, du_hat_dt = pratt_normalize_with_derivative(u, du_dt)
+        # Normaliser la solution et sa dérivée.
         if u_hat is None:
             return None
 
         tau, eta, kappa, dtau_dt, deta_dt, dkappa_dt = \
             extract_descriptors_with_derivative(u_hat, du_hat_dt, p)
-        nu  = geometric_variation(dtau_dt, deta_dt, dkappa_dt, t)
-        phi = compute_fitness(u, neighbors, normals, p, t)
+         # Extraire les descripteurs et leurs dérivées.
+        nu  = geometric_variation(dtau_dt, deta_dt, dkappa_dt, t) # Calculer la variation géométrique.
+        phi = compute_fitness(u, neighbors, normals, p, t) # Évaluer la qualité de l'ajustement.
 
         return {
             "tau"       : tau,
@@ -568,7 +543,7 @@ def gls_at_point(p, neighbors, normals, t, with_variation=False):
             "u"         : u,
             "u_hat"     : u_hat,
         }
-
+    # Ajuster une sphère algébrique.
     u = fit_algebraic_sphere(p, neighbors, normals, t)
     if u is None:
         return None
