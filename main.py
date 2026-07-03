@@ -30,11 +30,11 @@ from gls      import gls_at_point
 from notebooks import notebook_exists, save_results, load_results
 from visualization import (
     save_tau_colormap_all_scales,
-    save_eta_colormap_all_scales,     # ← nouveau
+    save_eta_colormap_all_scales,   
     save_kappa_colormap_all_scales,
     save_nu_colormap_all_scales,
     show_tau_colormap_interactive,
-    show_eta_colormap_interactive,     # ← nouveau
+    show_eta_colormap_interactive,   
     show_kappa_colormap_interactive,
     show_nu_colormap_interactive,
 )
