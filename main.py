@@ -208,14 +208,14 @@ if __name__ == "__main__":
 
 
 
-    for k in range(len(scales)):
+    for k in [0, len(scales) - 1]:
         show_tau_colormap_interactive(pcd,   TAU,       scales, scale_index=k)
         show_eta_colormap_interactive(pcd,   ETA_angle, scales, scale_index=k)
         show_kappa_colormap_interactive(pcd, KAPPA,     scales, scale_index=k)
         show_nu_colormap_interactive(pcd,    NU,        scales, scale_index=k)
 
 
-    #for k in [0, len(scales) - 1]:
+    #for k in range(len(scales)):
     #    show_tau_colormap_interactive(pcd,   TAU,       scales, scale_index=k)
     #    show_eta_colormap_interactive(pcd,   ETA_angle, scales, scale_index=k)
     #    show_kappa_colormap_interactive(pcd, KAPPA,     scales, scale_index=k)

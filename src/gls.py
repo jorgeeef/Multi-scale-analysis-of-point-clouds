@@ -543,17 +543,19 @@ def gls_at_point(p, neighbors, normals, t, with_variation=False):
             "u"         : u,
             "u_hat"     : u_hat,
         }
+    
+
     # Ajuster une sphère algébrique.
     u = fit_algebraic_sphere(p, neighbors, normals, t)
     if u is None:
         return None
 
-    u_hat = pratt_normalize(u)
+    u_hat = pratt_normalize(u) # Normaliser la solution.
     if u_hat is None:
         return None
 
-    tau, eta, kappa = extract_descriptors(u_hat, p)
-    phi             = compute_fitness(u, neighbors, normals, p, t)
+    tau, eta, kappa = extract_descriptors(u_hat, p) # Extraire les descripteurs géométriques.
+    phi             = compute_fitness(u, neighbors, normals, p, t) # Calculer la qualité de l'ajustement.
 
     return {
         "tau"   : tau,
