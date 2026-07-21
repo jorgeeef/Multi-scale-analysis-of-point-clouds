@@ -23,7 +23,7 @@ from gls import gls_at_point, sphere_center_radius
 from visualization import show_sphere_fit_interactive
 
 
-OBJ_PATH   = "data/12140_Skull_v3.obj"
+OBJ_PATH   = "data/sphere.obj"
 OBJ_NAME   = "12140_Skull_v3"
 OUTPUT_DIR = "results"
 
