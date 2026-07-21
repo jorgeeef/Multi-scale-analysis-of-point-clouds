@@ -12,8 +12,7 @@ from obj_reader import (
     print_stats,
     visualize_points,
     visualize_normals,
-    compare_normals,
-    save_pointcloud_ply,         
+    compare_normals,       
     save_pointcloud_screenshot,
 )
 from geometry import (
@@ -82,7 +81,6 @@ if __name__ == "__main__":
 
 
     # Step 4 — Sauvegardes pcd (à chaque exécution)
-    save_pointcloud_ply(pcd, obj_name)
     save_pointcloud_screenshot(pcd, obj_name, show_normals=False)
     save_pointcloud_screenshot(pcd, obj_name, show_normals=True)
 
