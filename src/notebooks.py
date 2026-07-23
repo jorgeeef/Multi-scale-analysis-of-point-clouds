@@ -72,7 +72,8 @@ def notebook_exists(obj_name):
 
 
 # SAUVEGARDE — 4 fichiers
-def save_info(obj_name, vertices, faces, pcd, spacing, scales, masks_dict, neighborhoods_dict):
+def save_info(obj_name, vertices, faces, pcd, spacing, scales,
+              mean_nb_per_scale, n_valid_per_scale):
     """
     Sauvegarde objnom_info.txt :
         - nom du fichier
@@ -80,6 +81,10 @@ def save_info(obj_name, vertices, faces, pcd, spacing, scales, masks_dict, neigh
         - espacement moyen
         - liste des échelles
         - statistiques de voisinage par échelle
+
+    mean_nb_per_scale / n_valid_per_scale : statistiques déjà agrégées
+    par échelle (pas les voisinages complets, trop volumineux à garder
+    en mémoire pour de gros nuages — voir main.py).
     """
     path = _info_path(obj_name)
     n_points  = len(vertices)
@@ -104,12 +109,9 @@ def save_info(obj_name, vertices, faces, pcd, spacing, scales, masks_dict, neigh
         f.write(f"  {'t':>10}  {'moy. voisins':>14}  {'valides':>12}\n")
         f.write("  " + "-" * 42 + "\n")
 
-        for t in scales:
-            neighbors  = neighborhoods_dict[t]                        # list of lists
-            sizes_all  = np.array([len(n) for n in neighbors])        # nb voisins par point
-            mean_nb    = float(np.mean(sizes_all))
-            n_valid    = int(np.sum(masks_dict[t]))
-            f.write(f"  t={t:8.4f}  {mean_nb:>12.1f}  {n_valid:>6}/{n_points}\n")
+        for j, t in enumerate(scales):
+            f.write(f"  t={t:8.4f}  {mean_nb_per_scale[j]:>12.1f}"
+                    f"  {n_valid_per_scale[j]:>6}/{n_points}\n")
 
     print(f"[NOTEBOOK] Sauvegardé : {path}")
 
@@ -366,7 +368,7 @@ def save_nu(obj_name, scales, NU):
 
 # SAUVEGARDE COMPLÈTE — point d'entrée principal
 def save_results(obj_name, vertices, faces, pcd,
-                 spacing, scales, masks_dict, neighborhoods_dict,
+                 spacing, scales, mean_nb_per_scale, n_valid_per_scale,
                  TAU, ETA, KAPPA, PHI, NU, normals_np):
     """
     Crée le dossier notebooks/<obj_name>/ et sauvegarde les 6 fichiers.
@@ -375,25 +377,27 @@ def save_results(obj_name, vertices, faces, pcd,
 
     Paramètres
     ----------
-    obj_name    : str          — nom du fichier sans extension
-    vertices    : np.ndarray   — (N, 3)
-    faces       : list
-    pcd         : o3d.PointCloud
-    spacing     : float
-    scales      : np.ndarray   — (S,)
-    masks_dict  : dict
-    TAU         : np.ndarray   — (N, S)
-    ETA         : np.ndarray   — (N, S, 3)
-    KAPPA       : np.ndarray   — (N, S)
-    PHI         : np.ndarray   — (N, S)
-    NU          : np.ndarray   — (N, S)
-    normals_np  : np.ndarray   — (N, 3)
+    obj_name          : str          — nom du fichier sans extension
+    vertices          : np.ndarray   — (N, 3)
+    faces             : list
+    pcd               : o3d.PointCloud
+    spacing           : float
+    scales            : np.ndarray   — (S,)
+    mean_nb_per_scale : np.ndarray   — (S,) nb moyen de voisins par échelle
+    n_valid_per_scale : np.ndarray   — (S,) nb de points valides par échelle
+    TAU               : np.ndarray   — (N, S)
+    ETA               : np.ndarray   — (N, S, 3)
+    KAPPA             : np.ndarray   — (N, S)
+    PHI               : np.ndarray   — (N, S)
+    NU                : np.ndarray   — (N, S)
+    normals_np        : np.ndarray   — (N, 3)
     """
     d = _notebook_dir(obj_name)
     os.makedirs(d, exist_ok=True)
     print(f"\n[NOTEBOOK] Création du dossier : {d}")
 
-    save_info(obj_name, vertices, faces, pcd, spacing, scales, masks_dict,neighborhoods_dict)
+    save_info(obj_name, vertices, faces, pcd, spacing, scales,
+              mean_nb_per_scale, n_valid_per_scale)
     save_tau(obj_name, scales, TAU)
     save_eta(obj_name, scales, ETA, normals_np)
     save_kappa(obj_name, scales, KAPPA)

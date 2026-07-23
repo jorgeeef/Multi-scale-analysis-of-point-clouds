@@ -19,11 +19,8 @@ from geometry import (
     clean_point_cloud,
     build_kdtree,
     knn_neighbors,
-    multi_scale_neighbors,
     estimate_mean_spacing,
     build_scales_from_spacing,
-    compute_validity_mask,
-    print_scale_stats,
 )
 from gls      import gls_at_point
 from notebooks import notebook_exists, save_results, load_results
@@ -134,18 +131,21 @@ if __name__ == "__main__":
         )
         print(f"[SCALES] {np.round(scales, 4)}")
 
-        neighborhoods_dict = multi_scale_neighbors(vertices, scales)
-        masks_dict         = compute_validity_mask(neighborhoods_dict,
-                                                   min_neighbors=6)
-        neighborhoods = [neighborhoods_dict[t] for t in scales]
-        masks         = [masks_dict[t]         for t in scales]
-
-        print_scale_stats(neighborhoods_dict, scales, masks_dict)
-
         # Fitting GLS
+        #
+        # NOTE mémoire : sur ce nuage (263k points), le voisinage par rayon
+        # à la plus grande échelle contient ~7 200 voisins/point en moyenne
+        # (jusqu'à ~11 000). Précalculer et garder en mémoire les voisinages
+        # des 15 échelles à la fois (ancien multi_scale_neighbors) revient à
+        # stocker des centaines de millions d'indices sous forme de listes
+        # Python (~70 Go rien que pour la plus grande échelle) → OOM-killer.
+        # On calcule donc les voisins échelle par échelle, par petits blocs
+        # de points (query_ball_point vectorisé + parallèle), et on les
+        # jette immédiatement après le fitting GLS du bloc.
         normals_np = np.asarray(pcd.normals)
         N          = len(vertices)
         S          = len(scales)
+        CHUNK      = 5000   # borne la mémoire pic à ~1-2 Go même à t_max
 
         TAU   = np.full((N, S),    np.nan)
         KAPPA = np.full((N, S),    np.nan)
@@ -153,20 +153,42 @@ if __name__ == "__main__":
         NU    = np.full((N, S),    np.nan)
         ETA   = np.full((N, S, 3), np.nan)
 
+        mean_nb_per_scale = np.zeros(S)
+        n_valid_per_scale = np.zeros(S, dtype=int)
+
         for j, t in enumerate(scales):
             print(f"[GLS] échelle {j+1}/{S}  t={t:.4f}")
-            for i, p in enumerate(vertices):
-                if not masks[j][i]:
-                    continue
-                idx    = neighborhoods[j][i]
-                result = gls_at_point(p, vertices[idx], normals_np[idx], t,
-                                      with_variation=True)
-                if result:
-                    TAU[i, j]   = result["tau"]
-                    KAPPA[i, j] = result["kappa"]
-                    PHI[i, j]   = result["phi"]
-                    NU[i, j]    = result["nu"]
-                    ETA[i, j]   = result["eta"]
+
+            n_valid  = 0
+            sum_size = 0
+
+            for start in range(0, N, CHUNK):
+                end            = min(start + CHUNK, N)
+                neighbor_lists = tree.query_ball_point(vertices[start:end],
+                                                         r=t, workers=-1)
+
+                for local_i, idx in enumerate(neighbor_lists):
+                    sum_size += len(idx)
+                    if len(idx) < 6:
+                        continue
+                    i      = start + local_i
+                    idx    = np.asarray(idx, dtype=np.int64)
+                    result = gls_at_point(vertices[i], vertices[idx], normals_np[idx],
+                                          t, with_variation=True)
+                    if result:
+                        n_valid    += 1
+                        TAU[i, j]   = result["tau"]
+                        KAPPA[i, j] = result["kappa"]
+                        PHI[i, j]   = result["phi"]
+                        NU[i, j]    = result["nu"]
+                        ETA[i, j]   = result["eta"]
+
+                del neighbor_lists
+
+            mean_nb_per_scale[j] = sum_size / N
+            n_valid_per_scale[j] = n_valid
+            print(f"       voisins moyens : {mean_nb_per_scale[j]:>8.1f}"
+                  f"   valides : {n_valid}/{N}")
 
         print("[GLS] Calcul terminé.")
 
@@ -186,8 +208,8 @@ if __name__ == "__main__":
             pcd                = pcd,
             spacing            = spacing,
             scales             = scales,
-            masks_dict         = masks_dict,
-            neighborhoods_dict = neighborhoods_dict,
+            mean_nb_per_scale  = mean_nb_per_scale,
+            n_valid_per_scale  = n_valid_per_scale,
             TAU                = TAU,
             ETA                = ETA,
             KAPPA              = KAPPA,
