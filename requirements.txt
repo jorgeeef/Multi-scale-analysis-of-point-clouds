@@ -11,3 +11,6 @@ open3d>=0.17.0
 
 # Structures spatiales (cKDTree pour les voisinages)
 scipy>=1.7
+
+# Tracé des courbes (échelle, ν) — analyse_tau_v.py
+matplotlib>=3.5

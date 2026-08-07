@@ -1,0 +1,29 @@
+# Analyse tau/nu — sphere
+# 20 points de tau maximal a la plus grande echelle (t=6.6477)
+# v = nu(p,t), variation geometrique (Mellado et al. 2012, Eq. 5)
+# decroissance testee de la plus grande a la plus petite echelle
+
+rang    point   tau(t_max)  decroissant      pente (a)
+------------------------------------------------------
+   1 p000225    +0.000141          non              —
+   2 p000233    +0.000141          non              —
+   3 p000231    +0.000141          non              —
+   4 p000254    +0.000141          non              —
+   5 p000252    +0.000141          non              —
+   6 p000251    +0.000141          non              —
+   7 p000256    +0.000141          non              —
+   8 p000227    +0.000141          non              —
+   9 p000228    +0.000141          non              —
+  10 p000229    +0.000141          non              —
+  11 p000230    +0.000141          non              —
+  12 p000248    +0.000141          non              —
+  13 p000249    +0.000141          non              —
+  14 p000250    +0.000141          non              —
+  15 p000245    +0.000141          non              —
+  16 p000238    +0.000141          non              —
+  17 p000241    +0.000141          non              —
+  18 p000239    +0.000141          non              —
+  19 p000236    +0.000140          non              —
+  20 p000253    +0.000140          non              —
+
+0/20 points montrent une decroissance de nu de la plus grande a la plus petite echelle.
