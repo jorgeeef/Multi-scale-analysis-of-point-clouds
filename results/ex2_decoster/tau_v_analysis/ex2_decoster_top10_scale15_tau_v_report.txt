@@ -1,0 +1,23 @@
+# Analyse tau/nu — ex2_decoster
+# 10 points de tau maximal a l'echelle selectionnee (t=832.444228)
+# Indice de l'echelle : 15/15
+# Nombre total d'echelles : 15
+# v = nu(p,t), variation geometrique # (Mellado et al. 2012, Eq. 5)
+# pente a de la regression lineaire # log(nu) ~ a*log(t) + b
+# soit nu ~ C * t^a
+# regression effectuee sur toutes # les echelles valides du point
+
+rang    point   tau(t_sel)    pente (a)  n_pts
+----------------------------------------------
+   1 p000408  -242.042413    -2.853246     12
+   2 p000409   -96.061375    -1.257492     15
+   3 p000441   -96.039246    -1.255325     15
+   4 p000375   -92.383875    -1.205190     15
+   5 p000407   -92.361752    -1.203195     15
+   6 p000442   -83.759815    -1.138626     15
+   7 p000376   -79.677954    -1.136749     15
+   8 p000440   -79.634330    -1.132951     15
+   9 p000374   -76.708202    -1.101829     15
+  10 p000410   -67.972514    -0.978032     15
+
+Pente moyenne : -1.326263 ecart-type : 0.514915 min : -2.853246 max : -0.978032

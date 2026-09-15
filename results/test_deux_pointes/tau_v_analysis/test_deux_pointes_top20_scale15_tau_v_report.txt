@@ -1,0 +1,31 @@
+# Analyse tau/nu — test_deux_pointes
+# 20 points de tau maximal a l'echelle selectionnee (t=0.054132)
+# Indice de l'echelle : 15/15
+# Nombre total d'echelles : 15
+# v = nu(p,t), variation geometrique # (Mellado et al. 2012, Eq. 5)
+# pente a de la regression lineaire # log(nu) ~ a*log(t) + b
+# soit nu ~ C * t^a
+# regression effectuee sur toutes # les echelles valides du point
+
+rang    point   tau(t_sel)    pente (a)  n_pts
+----------------------------------------------
+   1 p002047    +0.000000            —      0
+   2 p002046    +0.000000            —      0
+   3 p002045    +0.000000            —      0
+   4 p002044    +0.000000            —      0
+   5 p002043    +0.000000            —      0
+   6 p002042    +0.000000            —      0
+   7 p002041    +0.000000            —      0
+   8 p002040    +0.000000            —      0
+   9 p002039    +0.000000            —      0
+  10 p002038    +0.000000            —      0
+  11 p002037    +0.000000            —      0
+  12 p002036    +0.000000            —      0
+  13 p002035    +0.000000            —      0
+  14 p002034    +0.000000            —      0
+  15 p002033    +0.000000            —      0
+  16 p002032    +0.000000            —      0
+  17 p002031    +0.000000            —      0
+  18 p002030    +0.000000            —      0
+  19 p002029    +0.000000            —      0
+  20 p002028    +0.000000            —      0
