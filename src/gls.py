@@ -22,9 +22,6 @@ def wendland_weights(neighbors, p, t):
     Formule (Eq. 2) :
         w_i(t) = ( ||qi - p||² / t² - 1 )²
 
-    Support compact : w_i = 0 exactement pour ||qi - p|| = t.
-    Classe C² → garantit la dérivabilité du fitting par rapport à t,
-    propriété essentielle pour l'analyse continue en scale-space.
 
     Paramètres
     ----------

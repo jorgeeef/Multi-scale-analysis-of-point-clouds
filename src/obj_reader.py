@@ -70,7 +70,7 @@ def build_point_cloud_with_normals(vertices, faces, obj_normals):
 
     # Priorité 1 : normales depuis le maillage
     if faces is not None and len(faces) > 0:
-        print("[NORMALS] Source: mesh triangles")
+        #print("[NORMALS] Source: mesh triangles")
         mesh = o3d.geometry.TriangleMesh()
         mesh.vertices  = o3d.utility.Vector3dVector(vertices)
         mesh.triangles = o3d.utility.Vector3iVector(clean_faces(faces))
@@ -80,12 +80,12 @@ def build_point_cloud_with_normals(vertices, faces, obj_normals):
 
     # Priorité 2 : normales du fichier OBJ
     if obj_normals is not None and len(obj_normals) == len(vertices):
-        print("[NORMALS] Source: OBJ file")
+        #print("[NORMALS] Source: OBJ file")
         pcd.normals = o3d.utility.Vector3dVector(obj_normals)
         return pcd
 
     # Priorité 3 : estimation ACP locale
-    print("[NORMALS] Source: estimated (ACP k=30)")
+    #print("[NORMALS] Source: estimated (ACP k=30)")
     pcd.estimate_normals(
         search_param=o3d.geometry.KDTreeSearchParamKNN(knn=30)
     )
@@ -102,13 +102,13 @@ def build_point_cloud_with_normals(vertices, faces, obj_normals):
 
 def print_stats(vertices, faces, pcd=None):
     """Affiche les statistiques du modèle chargé."""
-    print("\n========== MESH STATISTICS ==========")
-    print("Vertices :", len(vertices))
-    print("Faces    :", len(faces))
-    if pcd is not None:
-        print("Points   :", len(pcd.points))
-        print("Normals  :", len(pcd.normals))
-    print("=====================================\n")
+    #print("\n========== MESH STATISTICS ==========")
+    #print("Vertices :", len(vertices))
+    #print("Faces    :", len(faces))
+    #if pcd is not None:
+    #    print("Points   :", len(pcd.points))
+    #    print("Normals  :", len(pcd.normals))
+    #print("=====================================\n")
 
 
 def visualize_points(pcd):
@@ -306,5 +306,5 @@ def save_pointcloud_screenshot(pcd, obj_name, output_dir="results",
     vis.capture_screen_image(path, do_render=True)
     vis.destroy_window()
 
-    print(f"[PNG] Sauvegardé : {path}")
+    #print(f"[PNG] Sauvegardé : {path}")
     return path

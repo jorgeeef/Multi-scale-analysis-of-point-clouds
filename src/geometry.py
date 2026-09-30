@@ -37,7 +37,7 @@ def build_kdtree(points):
 def knn_neighbors(tree, points, k=30):
     """
     Calcule les k plus proches voisins pour chaque point du nuage.
- 
+
     Paramètres
     tree : KD-tree construit sur le nuage de points.
     points : Coordonnées des points pour lesquels on cherche les voisins.

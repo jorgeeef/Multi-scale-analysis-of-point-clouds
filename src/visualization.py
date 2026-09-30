@@ -138,7 +138,7 @@ def _render_colormap_loop(pcd, data_per_scale, scales, folder, file_prefix,
         png_path = os.path.join(folder, f"{file_prefix}_s{j+1:02d}_t{t:.4f}.png")
         vis.capture_screen_image(png_path, do_render=True)
 
-        print(f"  s{j+1:02d}  t={t:.4f}  →  {os.path.basename(png_path)}")
+        #print(f"  s{j+1:02d}  t={t:.4f}  →  {os.path.basename(png_path)}")
 
     vis.destroy_window()
 
@@ -147,7 +147,7 @@ def _render_colormap_loop(pcd, data_per_scale, scales, folder, file_prefix,
     else:
         pcd.colors = o3d.utility.Vector3dVector(np.empty((0, 3)))
 
-    print(f"[{descriptor_label}-COLOR] {n_scales} images sauvegardées dans {folder}\n")
+    #print(f"[{descriptor_label}-COLOR] {n_scales} images sauvegardées dans {folder}\n")
 
 def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
                                  output_dir="results",
@@ -167,11 +167,11 @@ def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
     tau_min_signed = float(np.nanmin(TAU))
     tau_max_signed = float(np.nanmax(TAU))
 
-    print(f"\n[TAU-COLOR] Génération des images |τ| pour {len(scales)} échelles")
+    #print(f"\n[TAU-COLOR] Génération des images |τ| pour {len(scales)} échelles")
     print(f"[TAU-COLOR] τ signé     : min = {tau_min_signed:+.6f}   max = {tau_max_signed:+.6f}")
     print(f"[TAU-COLOR] |τ| utilisé : min = {abs_tau_min:.6f}        max = {abs_tau_max:.6f}")
-    print(f"[TAU-COLOR] Gradient    : bleu (|τ| min)  →  rouge (|τ| max)")
-    print(f"[TAU-COLOR] Dossier de sortie : {folder}")
+    #print(f"[TAU-COLOR] Gradient    : bleu (|τ| min)  →  rouge (|τ| max)")
+    #print(f"[TAU-COLOR] Dossier de sortie : {folder}")
 
     _render_colormap_loop(
         pcd              = pcd,
@@ -207,10 +207,10 @@ def save_eta_colormap_all_scales(pcd, ETA_angle, scales, obj_name,
     eta_min = float(np.nanmin(ETA_angle))
     eta_max = float(np.nanmax(ETA_angle))
 
-    print(f"\n[ETA-COLOR] Génération des images η pour {len(scales)} échelles")
+    #print(f"\n[ETA-COLOR] Génération des images η pour {len(scales)} échelles")
     print(f"[ETA-COLOR] η min global = {eta_min:.4f}°  →  bleu  (alignées)")
     print(f"[ETA-COLOR] η max global = {eta_max:.4f}°  →  rouge (opposées)")
-    print(f"[ETA-COLOR] Dossier de sortie : {folder}")
+    #print(f"[ETA-COLOR] Dossier de sortie : {folder}")
 
     _render_colormap_loop(
         pcd              = pcd,
@@ -251,11 +251,11 @@ def save_kappa_colormap_all_scales(pcd, KAPPA, scales, obj_name,
     kappa_min_signed = float(np.nanmin(KAPPA))
     kappa_max_signed = float(np.nanmax(KAPPA))
 
-    print(f"\n[KAPPA-COLOR] Génération des images |κ| pour {len(scales)} échelles")
+    #print(f"\n[KAPPA-COLOR] Génération des images |κ| pour {len(scales)} échelles")
     print(f"[KAPPA-COLOR] κ signé     : min = {kappa_min_signed:+.6f}   max = {kappa_max_signed:+.6f}")
     print(f"[KAPPA-COLOR] |κ| utilisé : min = {abs_kappa_min:.6f}        max = {abs_kappa_max:.6f}")
-    print(f"[KAPPA-COLOR] Gradient    : bleu (plan, |κ|≈0)  →  rouge (forte courbure)")
-    print(f"[KAPPA-COLOR] Dossier de sortie : {folder}")
+    #print(f"[KAPPA-COLOR] Gradient    : bleu (plan, |κ|≈0)  →  rouge (forte courbure)")
+    #print(f"[KAPPA-COLOR] Dossier de sortie : {folder}")
 
     _render_colormap_loop(
         pcd              = pcd,
@@ -289,10 +289,10 @@ def save_nu_colormap_all_scales(pcd, NU, scales, obj_name,
     nu_min = float(np.nanmin(NU))
     nu_max = float(np.nanmax(NU))
 
-    print(f"\n[NU-COLOR] Génération des images ν pour {len(scales)} échelles")
+    #print(f"\n[NU-COLOR] Génération des images ν pour {len(scales)} échelles")
     print(f"[NU-COLOR] ν min global = {nu_min:.6f}  →  bleu  (échelle pertinente)")
     print(f"[NU-COLOR] ν max global = {nu_max:.6f}  →  rouge (échelle instable)")
-    print(f"[NU-COLOR] Dossier de sortie : {folder}")
+    #print(f"[NU-COLOR] Dossier de sortie : {folder}")
 
     _render_colormap_loop(
         pcd              = pcd,

@@ -63,7 +63,7 @@ if __name__ == "__main__":
     selected  = obj_files[choice - 1]
     path      = os.path.join(data_folder, selected)
     obj_name  = os.path.splitext(selected)[0]
-    print(f"\n[INFO] Fichier sélectionné : {path}")
+    #print(f"\n[INFO] Fichier sélectionné : {path}")
 
 
     # Step 2 — Chargement + nettoyage
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     # Step 6 — GLS  (lecture si disponible, sinon calcul)
     if notebook_exists(obj_name):
 
-        print(f"[NOTEBOOK] Cache trouvé pour '{obj_name}' → lecture.")
+        #print(f"[NOTEBOOK] Cache trouvé pour '{obj_name}' → lecture.")
         results   = load_results(obj_name)
         scales    = results["scales"]
         TAU       = results["TAU"]
@@ -98,12 +98,12 @@ if __name__ == "__main__":
         NU        = results["NU"]
         ETA_angle = results["ETA_angle"]
 
-        print(f"       scales : {np.round(scales, 4)}")
-        print(f"       TAU    : {TAU.shape}")
-        print(f"       KAPPA  : {KAPPA.shape}")
-        print(f"       PHI    : {PHI.shape}")
-        print(f"       NU     : {NU.shape}")
-        print(f"       ETA°   : {ETA_angle.shape}")
+        #print(f"       scales : {np.round(scales, 4)}")
+        #print(f"       TAU    : {TAU.shape}")
+        #print(f"       KAPPA  : {KAPPA.shape}")
+        #print(f"       PHI    : {PHI.shape}")
+        #print(f"       NU     : {NU.shape}")
+        #print(f"       ETA°   : {ETA_angle.shape}")
 
     else:
 

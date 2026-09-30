@@ -113,7 +113,7 @@ def save_info(obj_name, vertices, faces, pcd, spacing, scales,
             f.write(f"  t={t:8.4f}  {mean_nb_per_scale[j]:>12.1f}"
                     f"  {n_valid_per_scale[j]:>6}/{n_points}\n")
 
-    print(f"[NOTEBOOK] Sauvegardé : {path}")
+    #print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
 def save_tau(obj_name, scales, TAU):
@@ -156,7 +156,7 @@ def save_tau(obj_name, scales, TAU):
                     f.write(f"    p{i:06d}  {v:+.6f}\n")
             f.write("\n")
 
-    print(f"[NOTEBOOK] Sauvegardé : {path}")
+    #print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
 def save_eta(obj_name, scales, ETA, normals_np):
@@ -214,7 +214,7 @@ def save_eta(obj_name, scales, ETA, normals_np):
                     f.write(f"    p{i:06d}  {angle:8.4f}°\n")
             f.write("\n")
 
-    print(f"[NOTEBOOK] Sauvegardé : {path}")
+    #print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
 def save_kappa(obj_name, scales, KAPPA):
@@ -266,7 +266,7 @@ def save_kappa(obj_name, scales, KAPPA):
                     f.write(f"    p{i:06d}  {v:+.6f}\n")
             f.write("\n")
 
-    print(f"[NOTEBOOK] Sauvegardé : {path}")
+    #print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
 def save_phi(obj_name, scales, PHI):
@@ -313,7 +313,7 @@ def save_phi(obj_name, scales, PHI):
                     f.write(f"    p{i:06d}  {v:.6f}\n")
             f.write("\n")
 
-    print(f"[NOTEBOOK] Sauvegardé : {path}")
+    #print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
 def save_nu(obj_name, scales, NU):
@@ -363,7 +363,7 @@ def save_nu(obj_name, scales, NU):
                     f.write(f"    p{i:06d}  {v:.6f}\n")
             f.write("\n")
 
-    print(f"[NOTEBOOK] Sauvegardé : {path}")
+    #print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
 # SAUVEGARDE COMPLÈTE — point d'entrée principal
@@ -394,7 +394,7 @@ def save_results(obj_name, vertices, faces, pcd,
     """
     d = _notebook_dir(obj_name)
     os.makedirs(d, exist_ok=True)
-    print(f"\n[NOTEBOOK] Création du dossier : {d}")
+    #print(f"\n[NOTEBOOK] Création du dossier : {d}")
 
     save_info(obj_name, vertices, faces, pcd, spacing, scales,
               mean_nb_per_scale, n_valid_per_scale)
@@ -404,7 +404,7 @@ def save_results(obj_name, vertices, faces, pcd,
     save_phi(obj_name, scales, PHI)
     save_nu(obj_name, scales, NU)
 
-    print(f"[NOTEBOOK] 6 fichiers sauvegardés dans {d}\n")
+    #print(f"[NOTEBOOK] 6 fichiers sauvegardés dans {d}\n")
 
 
 
@@ -482,11 +482,12 @@ def load_results(obj_name):
         'ETA_angle': np.ndarray (N, S)  — angles en degrés η vs n_i
         'info'    : str                 — contenu brut de _info.txt
     """
-    print(f"\n[NOTEBOOK] Lecture du cache : {_notebook_dir(obj_name)}")
+    #print(f"\n[NOTEBOOK] Lecture du cache : {_notebook_dir(obj_name)}")
 
     # Info
     with open(_info_path(obj_name), "r", encoding="utf-8") as f:
         info = f.read()
+
     print(info)
 
     # TAU
@@ -504,11 +505,11 @@ def load_results(obj_name):
     # NU
     scales_nu, NU = _read_descriptor_file(_nu_path(obj_name))
 
-    print(f"[NOTEBOOK] TAU   chargé : {TAU.shape}")
-    print(f"[NOTEBOOK] KAPPA chargé : {KAPPA.shape}")
-    print(f"[NOTEBOOK] PHI   chargé : {PHI.shape}")
-    print(f"[NOTEBOOK] NU    chargé : {NU.shape}")
-    print(f"[NOTEBOOK] ETA   chargé : {ETA_angle.shape}")
+    #print(f"[NOTEBOOK] TAU   chargé : {TAU.shape}")
+    #print(f"[NOTEBOOK] KAPPA chargé : {KAPPA.shape}")
+    #print(f"[NOTEBOOK] PHI   chargé : {PHI.shape}")
+    #print(f"[NOTEBOOK] NU    chargé : {NU.shape}")
+    #print(f"[NOTEBOOK] ETA   chargé : {ETA_angle.shape}")
 
     return {
         "scales"    : scales_tau,
