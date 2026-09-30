@@ -2,18 +2,6 @@
 # =====================================================
 # Visualtisation scalaire - coloration des points par τ
 # =====================================================
-# Pour chaque point p et chaque échelle t, mappe la valeur de τ
-# vers une couleur RGB par interpolation linéaire :
-#
-#     β = (τ - τ_min) / (τ_max - τ_min)         ∈ [0, 1]
-#     couleur = (β, 0, 1 - β)
-#
-#   τ_min  →  bleu  (0, 0, 1)
-#   τ_max  →  rouge (1, 0, 0)
-#
-# τ_min et τ_max sont calculés globalement sur toutes les
-# échelles pour garantir une comparaison visuelle cohérente
-# entre les images.
 import os
 import copy
 import numpy as np
@@ -44,17 +32,17 @@ def _scalar_to_color(values, val_min, val_max):
     mask_low = beta <= 0.5
     x = beta[mask_low] * 2.0
 
-    colors[mask_low, 0] = x          # R : 0 → 1
-    colors[mask_low, 1] = x          # G : 0 → 1
-    colors[mask_low, 2] = 1 - x       # B : 1
+    colors[mask_low, 0] = x          
+    colors[mask_low, 1] = x          
+    colors[mask_low, 2] = 1 - x       
 
     # Jaune → Rouge
     mask_high = beta > 0.5
     x = (beta[mask_high] - 0.5) * 2.0
 
-    colors[mask_high, 0] = 1.0       # R : 1
-    colors[mask_high, 1] = 1.0 - x   # G : 1 → 0
-    colors[mask_high, 2] = 0.0       # B : 0
+    colors[mask_high, 0] = 1.0       
+    colors[mask_high, 1] = 1.0 - x   
+    colors[mask_high, 2] = 0.0       
 
     # NaN → gris
     nan_mask = np.isnan(values)
@@ -102,16 +90,6 @@ def _render_colormap_loop(pcd, data_per_scale, scales, folder, file_prefix,
                           width=1024, height=768):
     """
     Helper interne — boucle de capture PNG commune à τ, η, κ.
-    
-    Paramètres
-    ----------
-    pcd              : o3d.geometry.PointCloud
-    data_per_scale   : np.ndarray (N, S) — valeurs scalaires à chaque échelle
-    scales           : np.ndarray (S,)
-    folder           : str  — dossier de sortie déjà créé
-    file_prefix      : str  — préfixe du nom de fichier (ex: "Format3_tau", "Format3_eta")
-    val_min, val_max : bornes globales pour la colormap
-    descriptor_label : str  — pour les logs (ex: "TAU", "ETA", "KAPPA")
     """
     original_colors = (np.asarray(pcd.colors).copy()
                        if len(pcd.colors) > 0 else None)
@@ -138,7 +116,6 @@ def _render_colormap_loop(pcd, data_per_scale, scales, folder, file_prefix,
         png_path = os.path.join(folder, f"{file_prefix}_s{j+1:02d}_t{t:.4f}.png")
         vis.capture_screen_image(png_path, do_render=True)
 
-        #print(f"  s{j+1:02d}  t={t:.4f}  →  {os.path.basename(png_path)}")
 
     vis.destroy_window()
 
@@ -147,7 +124,6 @@ def _render_colormap_loop(pcd, data_per_scale, scales, folder, file_prefix,
     else:
         pcd.colors = o3d.utility.Vector3dVector(np.empty((0, 3)))
 
-    #print(f"[{descriptor_label}-COLOR] {n_scales} images sauvegardées dans {folder}\n")
 
 def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
                                  output_dir="results",
@@ -167,11 +143,8 @@ def save_tau_colormap_all_scales(pcd, TAU, scales, obj_name,
     tau_min_signed = float(np.nanmin(TAU))
     tau_max_signed = float(np.nanmax(TAU))
 
-    #print(f"\n[TAU-COLOR] Génération des images |τ| pour {len(scales)} échelles")
     print(f"[TAU-COLOR] τ signé     : min = {tau_min_signed:+.6f}   max = {tau_max_signed:+.6f}")
     print(f"[TAU-COLOR] |τ| utilisé : min = {abs_tau_min:.6f}        max = {abs_tau_max:.6f}")
-    #print(f"[TAU-COLOR] Gradient    : bleu (|τ| min)  →  rouge (|τ| max)")
-    #print(f"[TAU-COLOR] Dossier de sortie : {folder}")
 
     _render_colormap_loop(
         pcd              = pcd,
@@ -198,19 +171,15 @@ def save_eta_colormap_all_scales(pcd, ETA_angle, scales, obj_name,
         0°   → bleu  (normales parfaitement alignées)
         180° → rouge (normales opposées)
     
-    Sauvegarde dans : results/<obj_name>/eta/
     """
     folder = os.path.join(output_dir, obj_name, "eta")
     os.makedirs(folder, exist_ok=True)
 
-    # Bornes globales sur l'angle (toujours ∈ [0, 180°])
     eta_min = float(np.nanmin(ETA_angle))
     eta_max = float(np.nanmax(ETA_angle))
 
-    #print(f"\n[ETA-COLOR] Génération des images η pour {len(scales)} échelles")
     print(f"[ETA-COLOR] η min global = {eta_min:.4f}°  →  bleu  (alignées)")
     print(f"[ETA-COLOR] η max global = {eta_max:.4f}°  →  rouge (opposées)")
-    #print(f"[ETA-COLOR] Dossier de sortie : {folder}")
 
     _render_colormap_loop(
         pcd              = pcd,
@@ -238,7 +207,6 @@ def save_kappa_colormap_all_scales(pcd, KAPPA, scales, obj_name,
         |κ| faible → bleu  (plan local)
         |κ| élevé  → rouge (forte courbure, convexe OU concave)
     
-    Sauvegarde dans : results/<obj_name>/kappa/
     """
     folder = os.path.join(output_dir, obj_name, "kappa")
     os.makedirs(folder, exist_ok=True)
@@ -251,11 +219,8 @@ def save_kappa_colormap_all_scales(pcd, KAPPA, scales, obj_name,
     kappa_min_signed = float(np.nanmin(KAPPA))
     kappa_max_signed = float(np.nanmax(KAPPA))
 
-    #print(f"\n[KAPPA-COLOR] Génération des images |κ| pour {len(scales)} échelles")
     print(f"[KAPPA-COLOR] κ signé     : min = {kappa_min_signed:+.6f}   max = {kappa_max_signed:+.6f}")
     print(f"[KAPPA-COLOR] |κ| utilisé : min = {abs_kappa_min:.6f}        max = {abs_kappa_max:.6f}")
-    #print(f"[KAPPA-COLOR] Gradient    : bleu (plan, |κ|≈0)  →  rouge (forte courbure)")
-    #print(f"[KAPPA-COLOR] Dossier de sortie : {folder}")
 
     _render_colormap_loop(
         pcd              = pcd,
@@ -281,7 +246,6 @@ def save_nu_colormap_all_scales(pcd, NU, scales, obj_name,
         ν faible → bleu  (échelle pertinente, descripteur stable)
         ν élevé  → rouge (échelle instable / structure en train de changer)
 
-    Sauvegarde dans : results/<obj_name>/nu/
     """
     folder = os.path.join(output_dir, obj_name, "nu")
     os.makedirs(folder, exist_ok=True)
@@ -289,10 +253,8 @@ def save_nu_colormap_all_scales(pcd, NU, scales, obj_name,
     nu_min = float(np.nanmin(NU))
     nu_max = float(np.nanmax(NU))
 
-    #print(f"\n[NU-COLOR] Génération des images ν pour {len(scales)} échelles")
     print(f"[NU-COLOR] ν min global = {nu_min:.6f}  →  bleu  (échelle pertinente)")
     print(f"[NU-COLOR] ν max global = {nu_max:.6f}  →  rouge (échelle instable)")
-    #print(f"[NU-COLOR] Dossier de sortie : {folder}")
 
     _render_colormap_loop(
         pcd              = pcd,
@@ -457,14 +419,7 @@ def _build_sphere_fit_geometries(p, neighbor_points, center, radius,
     sphère : voisinage P_t(p) (bleu), point p (marqueur rouge), sphère
     algébrique ajustée (fil de fer noir), et un contexte optionnel
     (gris clair) — à la manière des Figures 1 / 3(a-b) / 5 de Mellado
-    et al. (2012).
 
-    Retourne
-    --------
-    geometries        : liste de géométries Open3D, contexte en premier
-    n_context_offset  : int — nombre de géométries de contexte ajoutées
-                         en tête de liste (0 ou 1), utile pour savoir
-                         où commence la partie "locale" recadrable.
     """
     # Rayon local du voisinage : détermine la taille physique de la
     # calotte affichée autour de p.
@@ -495,15 +450,7 @@ def _build_sphere_fit_geometries(p, neighbor_points, center, radius,
     marker_p.compute_vertex_normals()
     local_geometries.append(marker_p)
 
-    # Calotte locale de la sphère ajustée : on ne tessellise PAS la
-    # sphère entière puis on découpe (échoue silencieusement quand le
-    # rayon est très grand — quasi-plan — car la résolution globale
-    # donne alors des triangles bien plus gros que la zone d'intérêt).
-    # On construit à la place directement, dans le plan tangent en p,
-    # une grille physiquement dimensionnée par crop_half, projetée
-    # radialement sur la sphère depuis son centre : ceci reste précis
-    # et bien résolu quel que soit le rayon, du fit quasi-plan (rayon
-    # énorme) au fit très courbé (petit rayon).
+
     axis = p - center
     axis_norm = np.linalg.norm(axis)
     n = axis / axis_norm if axis_norm > 1e-9 else np.array([0., 0., 1.])
@@ -546,7 +493,6 @@ def save_sphere_fit_visualization(p, neighbor_points, center, radius, obj_name,
     et une échelle t donnés : le voisinage P_t(p), le point p, et la
     sphère algébrique ajustée. Voir _build_sphere_fit_geometries.
 
-    Sauvegarde dans : results/<obj_name>/sphere_fit/{obj_name}_{tag}.png
     """
     folder = os.path.join(output_dir, obj_name, "sphere_fit")
     os.makedirs(folder, exist_ok=True)
@@ -588,8 +534,6 @@ def show_sphere_fit_interactive(p, neighbor_points, center, radius, tag,
     algébrique ajustée (fil de fer noir) — voir
     _build_sphere_fit_geometries pour la construction des géométries.
 
-    Bloquant : la fenêtre doit être fermée pour passer au (point,
-    échelle) suivant.
     """
     context_geoms, local_geometries = _build_sphere_fit_geometries(
         p, neighbor_points, center, radius, context_points)
