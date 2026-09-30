@@ -73,7 +73,6 @@ if __name__ == "__main__":
 
     # Step 3 — Normales + PCD
     pcd = build_point_cloud_with_normals(vertices, faces, obj_normals)
-    print_stats(vertices, faces, pcd)
 
 
     # Step 4 — Sauvegardes pcd (à chaque exécution)

@@ -6,7 +6,6 @@ import os
 def load_obj(filepath):
     """
     Lit un fichier .obj et extrait les vertices, faces et normales.
-    Les indices de faces sont convertis de base-1 (OBJ) à base-0 (Python).
     """
     vertices = []
     faces    = []
@@ -37,9 +36,7 @@ def load_obj(filepath):
 def clean_faces(faces):
     """
     Nettoie et normalise la liste de faces.
-    Filtre les faces None, les chaînes mal formées,
-    et ne conserve que les triangles valides (>= 3 sommets).
-    
+    Filtre les faces None, les chaînes mal formées
     """
     clean = []
     for f in faces:
@@ -60,17 +57,12 @@ def build_point_cloud_with_normals(vertices, faces, obj_normals):
     """
     Construit un PointCloud Open3D avec les meilleures normales disponibles.
 
-    Priorité :
-        1. Normales calculées depuis le maillage (si faces disponibles)
-        2. Normales lues depuis le fichier OBJ (si présentes et alignées)
-        3. Normales estimées par ACP locale (fallback)
     """
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(vertices)
 
-    # Priorité 1 : normales depuis le maillage
+    # normales depuis le maillage
     if faces is not None and len(faces) > 0:
-        #print("[NORMALS] Source: mesh triangles")
         mesh = o3d.geometry.TriangleMesh()
         mesh.vertices  = o3d.utility.Vector3dVector(vertices)
         mesh.triangles = o3d.utility.Vector3iVector(clean_faces(faces))
@@ -78,22 +70,19 @@ def build_point_cloud_with_normals(vertices, faces, obj_normals):
         pcd.normals = mesh.vertex_normals
         return pcd
 
-    # Priorité 2 : normales du fichier OBJ
+    # normales du fichier OBJ
     if obj_normals is not None and len(obj_normals) == len(vertices):
-        #print("[NORMALS] Source: OBJ file")
         pcd.normals = o3d.utility.Vector3dVector(obj_normals)
         return pcd
 
-    # Priorité 3 : estimation ACP locale
-    #print("[NORMALS] Source: estimated (ACP k=30)")
+    # estimation ACP locale
     pcd.estimate_normals(
         search_param=o3d.geometry.KDTreeSearchParamKNN(knn=30)
     )
     pcd.normalize_normals()
 
     # Orientation vers l'extérieur : on suppose que le centroïde
-    # est à l'intérieur de l'objet (valide pour la grande majorité
-    # des modèles scannés fermés)
+    # est à l'intérieur de l'objet 
     pcd.orient_normals_towards_camera_location(
         camera_location=np.mean(vertices, axis=0)
     )
@@ -102,13 +91,13 @@ def build_point_cloud_with_normals(vertices, faces, obj_normals):
 
 def print_stats(vertices, faces, pcd=None):
     """Affiche les statistiques du modèle chargé."""
-    #print("\n========== MESH STATISTICS ==========")
-    #print("Vertices :", len(vertices))
-    #print("Faces    :", len(faces))
-    #if pcd is not None:
-    #    print("Points   :", len(pcd.points))
-    #    print("Normals  :", len(pcd.normals))
-    #print("=====================================\n")
+    print("\n========== MESH STATISTICS ==========")
+    print("Vertices :", len(vertices))
+    print("Faces    :", len(faces))
+    if pcd is not None:
+        print("Points   :", len(pcd.points))
+        print("Normals  :", len(pcd.normals))
+    print("=====================================\n")
 
 
 def visualize_points(pcd):
@@ -132,9 +121,6 @@ def visualize_normals(pcd):
 def compare_normals(vertices, faces, obj_normals):
     """
     Compare les trois sources de normales disponibles :
-        1. Normales depuis le maillage (mesh triangles)
-        2. Normales depuis le fichier OBJ
-        3. Normales estimées par ACP locale (k=30)
 
     Pour chaque paire, calcule le cosinus de l'angle entre les normales
     (produit scalaire sur normales unitaires), puis en déduit :
@@ -147,7 +133,7 @@ def compare_normals(vertices, faces, obj_normals):
 
     sources = {}
 
-    # --- Source 1 : maillage ---
+    # --- maillage ---
     if faces is not None and len(faces) > 0:
         mesh = o3d.geometry.TriangleMesh()
         mesh.vertices  = o3d.utility.Vector3dVector(vertices)
@@ -155,11 +141,11 @@ def compare_normals(vertices, faces, obj_normals):
         mesh.compute_vertex_normals()
         sources["mesh"] = np.asarray(mesh.vertex_normals)
 
-    # --- Source 2 : fichier OBJ ---
+    # --- fichier OBJ ---
     if obj_normals is not None and len(obj_normals) == len(vertices):
         sources["obj"] = np.asarray(obj_normals)
 
-    # --- Source 3 : estimation ACP + orientation par référence mesh ---
+    # --- estimation ACP  ---
     pcd_est = o3d.geometry.PointCloud()
     pcd_est.points = o3d.utility.Vector3dVector(vertices)
     pcd_est.estimate_normals(
@@ -237,20 +223,9 @@ def compare_normals(vertices, faces, obj_normals):
 
 def save_pointcloud_ply(pcd, obj_name, output_dir="notebooks"):
     """
-    Sauvegarde le nuage de points Open3D au format .ply.
-
     Le fichier contient les positions des points et leurs normales,
     rechargeable plus tard avec o3d.io.read_point_cloud(...).
 
-    Paramètres
-    ----------
-    pcd        : o3d.geometry.PointCloud
-    obj_name   : str
-    output_dir : str  (défaut "notebooks")
-
-    Retourne
-    --------
-    path : str  — chemin du fichier créé
     """
     folder = os.path.join(output_dir, obj_name)
     os.makedirs(folder, exist_ok=True)
@@ -269,21 +244,9 @@ def save_pointcloud_screenshot(pcd, obj_name, output_dir="results",
     """
     Capture une image PNG du nuage de points via le visualiseur Open3D
     en mode 'headless' (sans interaction utilisateur).
-
     Une fenêtre s'ouvre brièvement puis se ferme automatiquement
     après la capture.
 
-    Paramètres
-    ----------
-    pcd          : o3d.geometry.PointCloud
-    obj_name     : str
-    output_dir   : str   — défaut "results" (séparé des fichiers numériques)
-    show_normals : bool  — afficher les normales sur la capture
-    width, height: int   — résolution de l'image
-
-    Retourne
-    --------
-    path : str  — chemin de l'image créée
     """
     folder = os.path.join(output_dir, obj_name)
     os.makedirs(folder, exist_ok=True)
@@ -306,5 +269,4 @@ def save_pointcloud_screenshot(pcd, obj_name, output_dir="results",
     vis.capture_screen_image(path, do_render=True)
     vis.destroy_window()
 
-    #print(f"[PNG] Sauvegardé : {path}")
     return path
