@@ -89,7 +89,6 @@ if __name__ == "__main__":
     # Step 6 — GLS  (lecture si disponible, sinon calcul)
     if notebook_exists(obj_name):
 
-        #print(f"[NOTEBOOK] Cache trouvé pour '{obj_name}' → lecture.")
         results   = load_results(obj_name)
         scales    = results["scales"]
         TAU       = results["TAU"]
@@ -97,13 +96,6 @@ if __name__ == "__main__":
         PHI       = results["PHI"]
         NU        = results["NU"]
         ETA_angle = results["ETA_angle"]
-
-        #print(f"       scales : {np.round(scales, 4)}")
-        #print(f"       TAU    : {TAU.shape}")
-        #print(f"       KAPPA  : {KAPPA.shape}")
-        #print(f"       PHI    : {PHI.shape}")
-        #print(f"       NU     : {NU.shape}")
-        #print(f"       ETA°   : {ETA_angle.shape}")
 
     else:
 
@@ -123,9 +115,9 @@ if __name__ == "__main__":
 
         scales = build_scales_from_spacing(
             spacing,
-            n_scales   = 15, #12
+            n_scales   = 15, 
             factor_min = 5,
-            factor_max = 50, #15
+            factor_max = 50, 
             mode       = "log",
         )
         print(f"[SCALES] {np.round(scales, 4)}")
@@ -213,14 +205,12 @@ if __name__ == "__main__":
     save_eta_colormap_all_scales(pcd, ETA_angle, scales, obj_name)
     save_kappa_colormap_all_scales(pcd, KAPPA, scales, obj_name)
     save_nu_colormap_all_scales(pcd, NU, scales, obj_name)
-
     #for k in range(len(scales)):
     #    show_tau_colormap_interactive(pcd,   TAU,       scales, scale_index=k)
 
 
 
 # Manual visualization of |τ|
-
 while True:
 
     print("\n" + "=" * 50)
