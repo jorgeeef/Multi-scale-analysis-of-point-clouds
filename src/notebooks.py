@@ -1,8 +1,6 @@
 # src/notebooks.py
 # =========================================================
 # Gestion de la persistance des résultats GLS
-# =========================================================
-# Responsabilités :
 #   - Vérifier si un obj a déjà été traité (cache)
 #   - Créer le dossier notebooks/<obj_name>/
 #   - Sauvegarder les 4 fichiers de résultats
@@ -11,7 +9,6 @@
 
 import os
 import numpy as np
-
 
 # Chemins
 NOTEBOOKS_ROOT = "notebooks"
@@ -156,8 +153,6 @@ def save_tau(obj_name, scales, TAU):
                     f.write(f"    p{i:06d}  {v:+.6f}\n")
             f.write("\n")
 
-    #print(f"[NOTEBOOK] Sauvegardé : {path}")
-
 
 def save_eta(obj_name, scales, ETA, normals_np):
     """
@@ -266,7 +261,6 @@ def save_kappa(obj_name, scales, KAPPA):
                     f.write(f"    p{i:06d}  {v:+.6f}\n")
             f.write("\n")
 
-    #print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
 def save_phi(obj_name, scales, PHI):
@@ -322,9 +316,9 @@ def save_nu(obj_name, scales, NU):
         - nombre d'échelles
         - pour chaque échelle : valeur de t puis les N valeurs de ν
 
-    ν(p,t) >= 0 : variation géométrique (Mellado et al. 2012, Eq. 5).
+    ν(p,t) >= 0 : variation géométrique 
     ν faible → échelle "pertinente" (descripteur stable). ν=0 pour une
-    forme parfaitement scale-invariante (ex. sphère ou plan idéal).
+    forme parfaitement scale-invariante (ex. sphère ou plan idéal)
     """
     path     = _nu_path(obj_name)
     n_scales = len(scales)
@@ -363,34 +357,14 @@ def save_nu(obj_name, scales, NU):
                     f.write(f"    p{i:06d}  {v:.6f}\n")
             f.write("\n")
 
-    #print(f"[NOTEBOOK] Sauvegardé : {path}")
 
 
-# SAUVEGARDE COMPLÈTE — point d'entrée principal
+# SAUVEGARDE COMPLÈTE 
 def save_results(obj_name, vertices, faces, pcd,
                  spacing, scales, mean_nb_per_scale, n_valid_per_scale,
                  TAU, ETA, KAPPA, PHI, NU, normals_np):
     """
     Crée le dossier notebooks/<obj_name>/ et sauvegarde les 6 fichiers.
-
-    Appelé depuis main.py après la boucle GLS.
-
-    Paramètres
-    ----------
-    obj_name          : str          — nom du fichier sans extension
-    vertices          : np.ndarray   — (N, 3)
-    faces             : list
-    pcd               : o3d.PointCloud
-    spacing           : float
-    scales            : np.ndarray   — (S,)
-    mean_nb_per_scale : np.ndarray   — (S,) nb moyen de voisins par échelle
-    n_valid_per_scale : np.ndarray   — (S,) nb de points valides par échelle
-    TAU               : np.ndarray   — (N, S)
-    ETA               : np.ndarray   — (N, S, 3)
-    KAPPA             : np.ndarray   — (N, S)
-    PHI               : np.ndarray   — (N, S)
-    NU                : np.ndarray   — (N, S)
-    normals_np        : np.ndarray   — (N, 3)
     """
     d = _notebook_dir(obj_name)
     os.makedirs(d, exist_ok=True)
@@ -404,7 +378,6 @@ def save_results(obj_name, vertices, faces, pcd,
     save_phi(obj_name, scales, PHI)
     save_nu(obj_name, scales, NU)
 
-    #print(f"[NOTEBOOK] 6 fichiers sauvegardés dans {d}\n")
 
 
 
@@ -471,16 +444,6 @@ def load_results(obj_name):
     """
     Lit les 6 fichiers de résultats depuis notebooks/<obj_name>/.
 
-    Retourne
-    --------
-    dict avec clés :
-        'scales'  : np.ndarray (S,)
-        'TAU'     : np.ndarray (N, S)
-        'KAPPA'   : np.ndarray (N, S)
-        'PHI'     : np.ndarray (N, S)
-        'NU'      : np.ndarray (N, S)
-        'ETA_angle': np.ndarray (N, S)  — angles en degrés η vs n_i
-        'info'    : str                 — contenu brut de _info.txt
     """
     #print(f"\n[NOTEBOOK] Lecture du cache : {_notebook_dir(obj_name)}")
 
@@ -504,12 +467,6 @@ def load_results(obj_name):
 
     # NU
     scales_nu, NU = _read_descriptor_file(_nu_path(obj_name))
-
-    #print(f"[NOTEBOOK] TAU   chargé : {TAU.shape}")
-    #print(f"[NOTEBOOK] KAPPA chargé : {KAPPA.shape}")
-    #print(f"[NOTEBOOK] PHI   chargé : {PHI.shape}")
-    #print(f"[NOTEBOOK] NU    chargé : {NU.shape}")
-    #print(f"[NOTEBOOK] ETA   chargé : {ETA_angle.shape}")
 
     return {
         "scales"    : scales_tau,
