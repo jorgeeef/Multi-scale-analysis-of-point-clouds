@@ -325,9 +325,8 @@ def show_tau_colormap_interactive(
 
     abs_TAU = np.abs(TAU)
 
-    # --------------------------------------------------
+
     # Choix des bornes de la colormap
-    # --------------------------------------------------
     if normalization == "global":
         val_min = float(np.nanmin(abs_TAU))
         val_max = float(np.nanmax(abs_TAU))
@@ -344,9 +343,7 @@ def show_tau_colormap_interactive(
             "normalization doit être 'global' ou 'scale'."
         )
 
-    # --------------------------------------------------
     # Coloration
-    # --------------------------------------------------
     colors = _scalar_to_color(
         abs_TAU[:, scale_index],
         val_min,
@@ -356,9 +353,7 @@ def show_tau_colormap_interactive(
     pcd_colored = copy.deepcopy(pcd)
     pcd_colored.colors = o3d.utility.Vector3dVector(colors)
 
-    # --------------------------------------------------
     # Affichage
-    # --------------------------------------------------
     title = (
         f"|τ| — scale {scale_index + 1}/{len(scales)} "
         f"(t={scales[scale_index]:.4f}) "
