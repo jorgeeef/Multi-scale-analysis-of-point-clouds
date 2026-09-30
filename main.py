@@ -1,5 +1,4 @@
 # main.py
-
 import os
 import sys
 sys.path.append("src")
@@ -132,20 +131,10 @@ if __name__ == "__main__":
         print(f"[SCALES] {np.round(scales, 4)}")
 
         # Fitting GLS
-        #
-        # NOTE mémoire : sur ce nuage (263k points), le voisinage par rayon
-        # à la plus grande échelle contient ~7 200 voisins/point en moyenne
-        # (jusqu'à ~11 000). Précalculer et garder en mémoire les voisinages
-        # des 15 échelles à la fois (ancien multi_scale_neighbors) revient à
-        # stocker des centaines de millions d'indices sous forme de listes
-        # Python (~70 Go rien que pour la plus grande échelle) → OOM-killer.
-        # On calcule donc les voisins échelle par échelle, par petits blocs
-        # de points (query_ball_point vectorisé + parallèle), et on les
-        # jette immédiatement après le fitting GLS du bloc.
         normals_np = np.asarray(pcd.normals)
         N          = len(vertices)
         S          = len(scales)
-        CHUNK      = 5000   # borne la mémoire pic à ~1-2 Go même à t_max
+        CHUNK      = 5000   
 
         TAU   = np.full((N, S),    np.nan)
         KAPPA = np.full((N, S),    np.nan)
@@ -218,9 +207,8 @@ if __name__ == "__main__":
             normals_np         = normals_np,
         )
 
-    # ----------------------------------------------------------
+
     # Coloration multi-descripteurs (τ, η, κ, ν)
-    # ----------------------------------------------------------
     save_tau_colormap_all_scales(pcd, TAU, scales, obj_name)
     save_eta_colormap_all_scales(pcd, ETA_angle, scales, obj_name)
     save_kappa_colormap_all_scales(pcd, KAPPA, scales, obj_name)
@@ -231,9 +219,7 @@ if __name__ == "__main__":
 
 
 
-# ----------------------------------------------------------
 # Manual visualization of |τ|
-# ----------------------------------------------------------
 
 while True:
 
