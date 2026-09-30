@@ -37,7 +37,8 @@ mkdir data
 python main.py
 
 ============================================================================================
-# To get updates
-git pull
+# To run this program
+
+env XDG_SESSION_TYPE=x11 LIBGL_ALWAYS_SOFTWARE=1 python3 main.py
 
 
