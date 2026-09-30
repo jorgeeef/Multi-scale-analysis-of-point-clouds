@@ -308,26 +308,76 @@ def save_nu_colormap_all_scales(pcd, NU, scales, obj_name,
     )
 
 
-def show_tau_colormap_interactive(pcd, TAU, scales, scale_index=0):
+def show_tau_colormap_interactive(
+    pcd,
+    TAU,
+    scales,
+    scale_index=0,
+    normalization="global"
+):
     """
-    Ouvre une fenêtre Open3D interactive avec coloration |τ| pour
-    une échelle donnée.
-    """
-    abs_TAU     = np.abs(TAU)
-    abs_tau_min = float(np.nanmin(abs_TAU))
-    abs_tau_max = float(np.nanmax(abs_TAU))
+    Visualise |τ| à une échelle choisie.
 
-    colors             = _scalar_to_color(np.abs(TAU[:, scale_index]),
-                                          abs_tau_min, abs_tau_max)
-    pcd_colored        = copy.deepcopy(pcd)
+    normalization:
+        "global" -> min/max de |τ| sur toutes les échelles
+        "scale"  -> min/max de |τ| uniquement à l'échelle choisie
+    """
+
+    abs_TAU = np.abs(TAU)
+
+    # --------------------------------------------------
+    # Choix des bornes de la colormap
+    # --------------------------------------------------
+    if normalization == "global":
+        val_min = float(np.nanmin(abs_TAU))
+        val_max = float(np.nanmax(abs_TAU))
+        mode_label = "global"
+
+    elif normalization == "scale":
+        values = abs_TAU[:, scale_index]
+        val_min = float(np.nanmin(values))
+        val_max = float(np.nanmax(values))
+        mode_label = "scale"
+
+    else:
+        raise ValueError(
+            "normalization doit être 'global' ou 'scale'."
+        )
+
+    # --------------------------------------------------
+    # Coloration
+    # --------------------------------------------------
+    colors = _scalar_to_color(
+        abs_TAU[:, scale_index],
+        val_min,
+        val_max
+    )
+
+    pcd_colored = copy.deepcopy(pcd)
     pcd_colored.colors = o3d.utility.Vector3dVector(colors)
 
-    title = (f"|τ| — échelle {scale_index+1}/{len(scales)} "
-             f"(t={scales[scale_index]:.4f})")
+    # --------------------------------------------------
+    # Affichage
+    # --------------------------------------------------
+    title = (
+        f"|τ| — scale {scale_index + 1}/{len(scales)} "
+        f"(t={scales[scale_index]:.4f}) "
+        f"[{mode_label}]"
+    )
+
+    print(
+        f"\n[TAU] Scale {scale_index + 1}/{len(scales)}"
+        f"  t = {scales[scale_index]:.4f}"
+    )
+    print(
+        f"[TAU] Normalisation : {mode_label}"
+        f"  |τ| min = {val_min:.6f}"
+        f"  |τ| max = {val_max:.6f}"
+    )
 
     o3d.visualization.draw_geometries(
         [pcd_colored],
-        window_name=title,
+        window_name=title
     )
 
 def show_eta_colormap_interactive(pcd, ETA_angle, scales, scale_index=0):

@@ -226,11 +226,84 @@ if __name__ == "__main__":
     save_kappa_colormap_all_scales(pcd, KAPPA, scales, obj_name)
     save_nu_colormap_all_scales(pcd, NU, scales, obj_name)
 
+    #for k in range(len(scales)):
+    #    show_tau_colormap_interactive(pcd,   TAU,       scales, scale_index=k)
 
 
-  
 
+# ----------------------------------------------------------
+# Manual visualization of |τ|
+# ----------------------------------------------------------
 
-    for k in range(len(scales)):
-        show_tau_colormap_interactive(pcd,   TAU,       scales, scale_index=k)
-      
+while True:
+
+    print("\n" + "=" * 50)
+    print("VISUALISATION DE |τ|")
+    print("=" * 50)
+
+    # Choix de la normalisation
+    while True:
+        print("\nChoisissez la normalisation :")
+        print("  1. Min / max global sur toutes les échelles")
+        print("  2. Min / max de l'échelle choisie")
+
+        try:
+            norm_choice = int(input("\nVotre choix (1-2) : "))
+
+            if norm_choice in (1, 2):
+                break
+
+            print("  Choix invalide.")
+
+        except ValueError:
+            print("  Veuillez entrer un nombre entier.")
+
+    normalization = "global" if norm_choice == 1 else "scale"
+
+    # Choix de l'échelle
+    while True:
+        print("\nÉchelles disponibles :")
+
+        for i, t in enumerate(scales, start=1):
+            print(f"  {i}. t = {t:.4f}")
+
+        try:
+            scale_choice = int(
+                input(
+                    f"\nChoisissez une échelle (1-{len(scales)}) : "
+                )
+            )
+
+            if 1 <= scale_choice <= len(scales):
+                break
+
+            print(f"  Numéro invalide (1-{len(scales)}).")
+
+        except ValueError:
+            print("  Veuillez entrer un nombre entier.")
+
+    scale_index = scale_choice - 1
+
+    # Visualisation
+    show_tau_colormap_interactive(
+        pcd,
+        TAU,
+        scales,
+        scale_index=scale_index,
+        normalization=normalization
+    )
+
+    # Demander si l'utilisateur veut continuer
+    while True:
+        again = input(
+            "\nVoulez-vous visualiser une autre échelle ? (o/n) : "
+        ).strip().lower()
+
+        if again in ("o", "oui"):
+            break
+
+        if again in ("n", "non"):
+            print("\nFin de la visualisation.")
+            raise SystemExit
+
+        print("  Veuillez répondre par 'o' ou 'n'.")
