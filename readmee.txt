@@ -39,6 +39,10 @@ python main.py
 ============================================================================================
 # To run this program
 
+# To visualize all the process including geometric descriptors:
 env XDG_SESSION_TYPE=x11 LIBGL_ALWAYS_SOFTWARE=1 python3 main.py
+
+# To visualize all the fitted sphere:
+env XDG_SESSION_TYPE=x11 LIBGL_ALWAYS_SOFTWARE=1 python3 visualize_sphere_fit.py
 
 
