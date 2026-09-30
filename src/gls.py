@@ -1,19 +1,10 @@
 # src/gls.py
 # =========================================================
-# Growing Least Squares — Mellado et al. (2012)
-# =========================================================
-# Implémente :
-#   - Fonction de poids de Wendland C2        (Eq. 2)
-#   - Fitting de sphère algébrique par WLS    (Appendix Eq. 7)
-#   - Normalisation de Pratt                  (Eq. 3)
-#   - Extraction des descripteurs τ, η, κ     (Eq. 4)
-#   - Calcul du fitness ϕ                     (Section 4.1)
-#   - Dérivées d'échelle analytiques + ν(p,t) (Section 4.2, Eq. 5)
-# =========================================================
+# Growing Least Squares — Mellado 
 
 import numpy as np
 
-# 1. FONCTION DE POIDS DE WENDLAND C2  (Eq. 2)
+# 1. FONCTION DE POIDS
 
 def wendland_weights(neighbors, p, t):
     """
@@ -22,17 +13,6 @@ def wendland_weights(neighbors, p, t):
     Formule (Eq. 2) :
         w_i(t) = ( ||qi - p||² / t² - 1 )²
 
-
-    Paramètres
-    ----------
-    neighbors : np.ndarray, shape (K, 3)
-        Coordonnées des K points voisins qi.
-    p : Point central d'évaluation.
-    t : Rayon d'échelle.
-
-    Retourne
-    --------
-    w : poids w_i >= 0
     """
     diff  = neighbors - p
     d2    = np.einsum("ij,ij->i", diff, diff)    # ||qi - p||²
@@ -48,17 +28,6 @@ def wendland_weight_derivative(neighbors, p, t):
 
         dw_i/dt = 4·d_i²/t³ · (1 - d_i²/t²)
 
-    Note : ce signe a été re-dérivé et vérifié par différences finies
-    numériques ; il est opposé à celui imprimé dans l'article (probable
-    artefact d'extraction du signe moins dans une fraction sur deux
-    lignes du PDF). w_i touche 0 tangentiellement en d_i=t (dérivée
-    nulle à la frontière), ce qui garantit que dΣwi/dt reste continue
-    même quand un point entre/sort du voisinage P_t en croissance —
-    condition nécessaire à la continuité de l'analyse en scale-space.
-
-    Retourne
-    --------
-    dw : np.ndarray, shape (K,)
     """
     diff = neighbors - p
     d2   = np.einsum("ij,ij->i", diff, diff)
@@ -71,44 +40,6 @@ def fit_algebraic_sphere(p, neighbors, normals, t):
     """
     Ajuste une sphère algébrique sur le voisinage P_t(p) par
     Weighted Least Squares avec intégration des normales.
-
-    Modèle implicite (Eq. 1) :
-        s_u(x) = [1, x^T, ||x||²] · u
-        u = [uc, ul_x, ul_y, ul_z, uq]^T
-
-    Le gradient du modèle est :
-        ∇s_u(x) = ul + 2·uq·x
-
-    Deux minimisations successives (GGG08) :
-
-    Étape A — intégration des normales :
-        min_u Σ w_i ||∇s_u(qi) - ni||²
-        → donne ul et uq en closed-form
-
-    Étape B — distance algébrique :
-        min_uc Σ w_i s_u(qi)²
-        → donne uc en closed-form
-
-    Formules (Appendix Eq. 7), avec w̃_i = w_i / Σw_j :
-
-        num_uq   = Σwi·(qi·ni) - (Σw̃i·qi)·(Σwi·ni)
-        denom_uq = Σwi·||qi||² - (Σw̃i·qi)·(Σwi·qi)
-        uq = (1/2) · num_uq / denom_uq
-
-        ul = Σw̃i·ni - 2·uq·(Σw̃i·qi)
-
-        uc = -(ul · Σw̃i·qi) - uq·(Σw̃i·||qi||²)
-
-    Attention : les premiers termes de num_uq/denom_uq utilisent les
-    poids NON normalisés wi (contrairement à tous les autres termes,
-    qui utilisent w̃i) — c'est bien ce que prescrit l'Eq. 7 de l'article,
-    et il ne faut pas les confondre avec Wt_q2/Wt_qn (normalisés, requis
-    pour uc). Le facteur 1/2 devant uq est également requis.
-
-    Retourne
-    --------
-    u : [uc, ul_x, ul_y, ul_z, uq]
-        None si le fitting échoue.
     """
     K = len(neighbors)
     if K < 6:
@@ -156,23 +87,6 @@ def fit_algebraic_sphere_with_derivative(p, neighbors, normals, t):
     Comme fit_algebraic_sphere, mais calcule en plus du/dt : la dérivée
     du vecteur de paramètres bruts u par rapport à l'échelle t, en
     différentiant analytiquement toute la chaîne de l'Eq. 7 (Section 4.2).
-
-    Pour toute quantité par voisin f_i constante en t (ex. qi, ni,
-    qi·ni, ||qi||²), en notant wi(t) le poids et dwi/dt sa dérivée :
-
-        A[f]  = Σ wi·fi            A'[f]  = Σ (dwi/dt)·fi
-        T[f]  = A[f] / S0                   (= Σ w̃i·fi)
-        T'[f] = (A'[f] - T[f]·S0') / S0     avec S0=Σwi, S0'=Σ dwi/dt
-
-    (T' obtenue par dérivation de A[f]/S0, règle du quotient)
-
-    Chaque terme de l'Eq. 7 est ensuite différentié par la règle du
-    produit/quotient, dans le même ordre que le calcul direct.
-
-    Retourne
-    --------
-    (u, du_dt) : tuple de np.ndarray, shape (5,) chacun
-        (None, None) si le fitting échoue.
     """
     K = len(neighbors)
     if K < 6:
@@ -231,26 +145,18 @@ def fit_algebraic_sphere_with_derivative(p, neighbors, normals, t):
     return u, du_dt
 
 
-# 3. NORMALISATION DE PRATT  (Eq. 3)
+# 3. NORMALISATION DE PRATT  
 def pratt_normalize(u):
     """
     Applique la normalisation de Pratt au vecteur de paramètres u.
 
-    Formule (Eq. 3) :
+    Formule :
         û = u / sqrt( ||ul||² - 4·uc·uq )
 
     Effet : contraint le gradient de s_û à être unitaire sur la
     0-isosurface → distances algébriques quasi-euclidiennes.
     Résout l'ambiguïté de signe (u et λu définissent la même sphère).
 
-    Paramètres
-    ----------
-    u : np.ndarray, shape (5,)
-
-    Retourne
-    --------
-    u_hat : np.ndarray, shape (5,)
-        None si dégénéré (sphère imaginaire ou point).
     """
     uc = u[0]
     ul = u[1:4]
@@ -272,14 +178,6 @@ def pratt_normalize_with_derivative(u, du_dt):
         dP/dt = 2·ul·dul/dt - 4·(duc/dt·uq + uc·duq/dt)
         dû/dt = du/dt/√P  -  û · dP/dt / (2P)
 
-    Paramètres
-    ----------
-    u, du_dt : np.ndarray, shape (5,)
-
-    Retourne
-    --------
-    (u_hat, du_hat_dt) : tuple de np.ndarray, shape (5,) chacun
-        (None, None) si dégénéré.
     """
     uc,  ul,  uq  = u[0],     u[1:4],     u[4]
     duc, dul, duq = du_dt[0], du_dt[1:4], du_dt[4]
@@ -296,12 +194,11 @@ def pratt_normalize_with_derivative(u, du_dt):
     return u_hat, du_hat_dt
 
 # 4. EXTRACTION DES DESCRIPTEURS  (Eq. 4)
-
 def extract_descriptors(u_hat, p):
     """
-    Extrait les descripteurs géométriques (τ, η, κ) depuis û.
+    Extrait les descripteurs géométriques depuis û.
 
-    Formules (Eq. 4) :
+    Formules  :
         τ = s_û(p) = ûc + ûl^T·p + ûq·||p||²
         η = ∇s_û(p) / ||∇s_û(p)||    avec ∇s_û(p) = ûl + 2·ûq·p
         κ = 2·ûq
@@ -315,16 +212,6 @@ def extract_descriptors(u_hat, p):
         κ = 0  → plan local (rayon infini)
         κ < 0  → concave
 
-    Paramètres
-    ----------
-    u_hat : np.ndarray, shape (5,)
-    p     : np.ndarray, shape (3,)
-
-    Retourne
-    --------
-    tau   : float
-    eta   : np.ndarray, shape (3,)
-    kappa : float
     """
     uc_hat = u_hat[0]
     ul_hat = u_hat[1:4]
@@ -362,12 +249,6 @@ def extract_descriptors_with_derivative(u_hat, du_hat_dt, p):
 
         κ = 2ûq  ⟹  dκ/dt = 2·dûq/dt
 
-    Retourne
-    --------
-    tau, kappa       : float
-    eta              : np.ndarray, shape (3,)
-    dtau_dt, dkappa_dt : float
-    deta_dt          : np.ndarray, shape (3,)
     """
     uc_hat, ul_hat, uq_hat = u_hat[0], u_hat[1:4], u_hat[4]
     duc,    dul,    duq    = du_hat_dt[0], du_hat_dt[1:4], du_hat_dt[4]
@@ -396,7 +277,7 @@ def extract_descriptors_with_derivative(u_hat, du_hat_dt, p):
 def sphere_center_radius(u_hat, kappa_eps=1e-8):
     """
     Retrouve le centre c et le rayon r de la sphère algébrique associée
-    à û, en complétant le carré de sa forme implicite (Eq. 1) :
+    à û, en complétant le carré de sa forme implicite :
 
         s_û(x) = ûq·||x||² + ûl·x + ûc = 0
         ⟺ ||x - c||² = r²,   c = -ûl/(2ûq),
@@ -408,19 +289,6 @@ def sphere_center_radius(u_hat, kappa_eps=1e-8):
         r = 1 / (2|ûq|) = 1/|κ|     (κ = 2ûq, cohérent avec l'Eq. 4 :
                                       κ est bien l'inverse du rayon)
 
-    Dégénère intentionnellement (retourne None) quand |ûq| ≈ 0 : le fit
-    est localement quasi-planaire et n'a pas de centre à distance finie
-    (cf. discussion "Normalization", Section 4.1 de l'article).
-
-    Paramètres
-    ----------
-    u_hat     : np.ndarray, shape (5,)
-    kappa_eps : seuil de dégénérescence sur |ûq|
-
-    Retourne
-    --------
-    (center, radius) : np.ndarray (3,), float
-        None si dégénéré (fit quasi-plan).
     """
     uq = u_hat[4]
     if abs(uq) < kappa_eps:
@@ -432,8 +300,7 @@ def sphere_center_radius(u_hat, kappa_eps=1e-8):
     return center, radius
 
 
-# 5. FITNESS  (Section 4.1)
-
+# 5. FITNESS  
 def compute_fitness(u, neighbors, normals, p, t):
     """
     Calcule le fitness ϕ : qualité d'alignement du champ scalaire
@@ -448,18 +315,6 @@ def compute_fitness(u, neighbors, normals, p, t):
         ϕ = 1.0  → alignement parfait (surface lisse, normales cohérentes)
         ϕ < 0.9  → fit dégradé (bruit, zone concave, bord ouvert)
         ϕ ≈ 0    → fit incohérent
-
-    Paramètres
-    ----------
-    u         : np.ndarray, shape (5,)   — paramètres bruts
-    neighbors : np.ndarray, shape (K, 3)
-    normals   : np.ndarray, shape (K, 3)
-    p         : np.ndarray, shape (3,)
-    t         : float
-
-    Retourne
-    --------
-    phi : float ∈ [0, 1]
     """
     w = wendland_weights(neighbors, p, t)
     W_sum = np.sum(w)
@@ -477,31 +332,12 @@ def compute_fitness(u, neighbors, normals, p, t):
     return float(np.clip(phi, 0.0, 1.0))
 
 
-# 6. VARIATION GÉOMÉTRIQUE ν(p,t)  (Section 4.2, Eq. 5)
-
+# 6. VARIATION GÉOMÉTRIQUE ν(p,t)  
 def geometric_variation(dtau_dt, deta_dt, dkappa_dt, t):
     """
     Fonction de variation géométrique ν(p,t)  (Eq. 5) :
 
         ν(p,t) = (dτ/dt)² + (t·dη/dt)² + (t²·dκ/dt)²
-
-    Combine les dérivées d'échelle des trois paramètres géométriques,
-    pondérées par les facteurs d'échelle (1, t, t²) qui rendent
-    chaque terme sans dimension et invariant d'échelle (τ~m, η sans
-    unité, κ~m⁻¹ ; cf. discussion Section 4.2). ν est minimal aux
-    échelles "pertinentes" : celles où le descripteur varie peu et
-    reflète donc une structure géométrique stable du nuage de points.
-
-    Paramètres
-    ----------
-    dtau_dt   : float             — dτ/dt en (p,t)
-    deta_dt   : np.ndarray, (3,)  — dη/dt en (p,t)
-    dkappa_dt : float             — dκ/dt en (p,t)
-    t         : float             — échelle courante
-
-    Retourne
-    --------
-    nu : float >= 0
     """
     deta_norm2 = float(np.dot(deta_dt, deta_dt))
     nu = dtau_dt ** 2 + (t ** 2) * deta_norm2 + (t ** 4) * (dkappa_dt ** 2)
