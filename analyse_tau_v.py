@@ -60,27 +60,19 @@ from geometry import (
 )
 
 
-# =========================================================
 # PARAMÈTRES
-# =========================================================
-
 N_TOP = 10
 
 DATA_FOLDER = "data"
 OUTPUT_DIR = "results"
 
 
-# =========================================================
-# SÉLECTION DU FICHIER OBJ
-# =========================================================
 
+# SÉLECTION DU FICHIER OBJ
 def select_obj_name(data_folder=DATA_FOLDER):
     """
     Liste les fichiers .obj présents dans data/
     et laisse l'utilisateur choisir.
-
-    Retourne :
-        obj_name : nom du fichier sans extension
     """
 
     obj_files = sorted(
@@ -130,18 +122,12 @@ def select_obj_name(data_folder=DATA_FOLDER):
     return os.path.splitext(selected)[0]
 
 
-# =========================================================
-# SÉLECTION DE L'ÉCHELLE
-# =========================================================
 
+# SÉLECTION DE L'ÉCHELLE
 def select_scale(scales):
     """
     Affiche toutes les échelles disponibles et laisse
     l'utilisateur choisir l'échelle d'analyse.
-
-    Retourne :
-        selected_scale_idx : indice Python de l'échelle
-        selected_scale      : valeur de t correspondante
     """
 
     print("\n")
@@ -202,9 +188,7 @@ def select_scale(scales):
     )
 
 
-# =========================================================
 # VISUALISATION OPEN3D
-# =========================================================
 
 def visualize_selected_points_open3d(
     vertices,
@@ -218,9 +202,7 @@ def visualize_selected_points_open3d(
         - uniquement les points sélectionnés en rouge
     """
 
-    # =====================================================
     # NUAGE DE POINTS COMPLET
-    # =====================================================
 
     pcd = o3d.geometry.PointCloud()
 
@@ -233,9 +215,7 @@ def visualize_selected_points_open3d(
         [0.7, 0.7, 0.7]
     )
 
-    # =====================================================
     # POINTS SÉLECTIONNÉS
-    # =====================================================
 
     selected_points = vertices[top_idx]
 
@@ -250,9 +230,7 @@ def visualize_selected_points_open3d(
         [1.0, 0.0, 0.0]
     )
 
-    # =====================================================
     # INFORMATIONS
-    # =====================================================
 
     print(
         f"\n[OPEN3D] Visualisation : {obj_name}"
@@ -278,9 +256,7 @@ def visualize_selected_points_open3d(
         f"sont rouges."
     )
 
-    # =====================================================
     # AFFICHAGE
-    # =====================================================
 
     o3d.visualization.draw_geometries(
         [
@@ -295,10 +271,7 @@ def visualize_selected_points_open3d(
         point_show_normal=False
     )
 
-
-# =========================================================
 # POINTS À TAU MAXIMAL À UNE ÉCHELLE DONNÉE
-# =========================================================
 
 def top_tau_points_at_scale(
     TAU,
@@ -309,32 +282,13 @@ def top_tau_points_at_scale(
     Retourne les indices des n_top points ayant les plus
     grandes valeurs de τ à l'échelle choisie.
 
-    Paramètres
-    ----------
-    TAU : array
-        Tableau de forme (nombre_points, nombre_echelles).
-
-    scale_idx : int
-        Indice de l'échelle choisie.
-
-    n_top : int
-        Nombre de points à sélectionner.
-
-    Retourne
-    --------
-    top_idx : array
-        Indices des points sélectionnés.
     """
 
-    # -----------------------------------------------------
     # τ à l'échelle choisie
-    # -----------------------------------------------------
 
     tau_at_scale = TAU[:, scale_idx]
 
-    # -----------------------------------------------------
     # Points valides
-    # -----------------------------------------------------
 
     idx_valid = np.where(
         ~np.isnan(tau_at_scale)
@@ -348,9 +302,7 @@ def top_tau_points_at_scale(
             f"d'en extraire {n_top}."
         )
 
-    # -----------------------------------------------------
     # Tri du plus grand τ au plus petit
-    # -----------------------------------------------------
 
     order = np.argsort(
     np.abs(tau_at_scale[idx_valid])
@@ -361,9 +313,7 @@ def top_tau_points_at_scale(
     return top_idx
 
 
-# =========================================================
 # RÉGRESSION LOG-LOG
-# =========================================================
 
 def loglog_slope(
     scales,
@@ -385,16 +335,9 @@ def loglog_slope(
 
     Les valeurs v <= 0 ne peuvent pas être utilisées
     car log(v) n'est pas défini.
-
-    Retourne :
-        slope
-        intercept
-        valid_mask
     """
 
-    # -----------------------------------------------------
     # Valeurs valides
-    # -----------------------------------------------------
 
     valid_mask = (
         ~np.isnan(v)
@@ -412,9 +355,7 @@ def loglog_slope(
             valid_mask
         )
 
-    # -----------------------------------------------------
     # Passage en logarithme
-    # -----------------------------------------------------
 
     log_t = np.log(
         scales[valid_mask]
@@ -424,9 +365,7 @@ def loglog_slope(
         v[valid_mask]
     )
 
-    # -----------------------------------------------------
     # Régression linéaire
-    # -----------------------------------------------------
 
     slope, intercept = np.polyfit(
         log_t,
@@ -441,9 +380,7 @@ def loglog_slope(
     )
 
 
-# =========================================================
 # COURBES DES DESCRIPTEURS
-# =========================================================
 
 def plot_descriptor_curves(
     scales,
@@ -472,16 +409,11 @@ def plot_descriptor_curves(
         figsize=(10, 6)
     )
 
-    # -----------------------------------------------------
     # Palette de couleurs
-    # -----------------------------------------------------
 
     cmap = plt.get_cmap("tab20")
 
-    # -----------------------------------------------------
     # Courbe de chaque point
-    # -----------------------------------------------------
-
     for rank, i in enumerate(top_idx):
 
         ax.semilogx(
@@ -496,10 +428,7 @@ def plot_descriptor_curves(
             )
         )
 
-    # -----------------------------------------------------
     # Ligne verticale correspondant à l'échelle choisie
-    # -----------------------------------------------------
-
     ax.axvline(
         selected_scale,
         linestyle="--",
@@ -511,10 +440,7 @@ def plot_descriptor_curves(
         )
     )
 
-    # -----------------------------------------------------
     # Axes
-    # -----------------------------------------------------
-
     ax.set_xlabel(
         "échelle t"
     )
@@ -523,29 +449,20 @@ def plot_descriptor_curves(
         ylabel
     )
 
-    # -----------------------------------------------------
     # Titre
-    # -----------------------------------------------------
-
     ax.set_title(
         f"{obj_name} — {descriptor_name} "
         f"pour les {len(top_idx)} points de τ maximal "
         f"à t={selected_scale:.4f}"
     )
 
-    # -----------------------------------------------------
     # Légende
-    # -----------------------------------------------------
-
     ax.legend(
         fontsize=6,
         ncol=2,
         loc="best"
     )
-
-    # -----------------------------------------------------
     # Grille
-    # -----------------------------------------------------
 
     ax.grid(
         True,
@@ -555,9 +472,7 @@ def plot_descriptor_curves(
 
     fig.tight_layout()
 
-    # -----------------------------------------------------
     # Sauvegarde
-    # -----------------------------------------------------
 
     fig_path = os.path.join(
         output_folder,
@@ -577,10 +492,7 @@ def plot_descriptor_curves(
         f"{fig_path}"
     )
 
-
-# =========================================================
 # GRAPHES LOG-LOG INDIVIDUELS
-# =========================================================
 
 def plot_nu_loglog_per_point(
     scales,
@@ -608,12 +520,9 @@ def plot_nu_loglog_per_point(
 
         ν ~ C · t^a
 
-    Un fichier PNG est sauvegardé pour chaque point.
     """
 
-    # -----------------------------------------------------
     # Un graphe par point
-    # -----------------------------------------------------
 
     for rank, i in enumerate(top_idx):
 
@@ -625,18 +534,14 @@ def plot_nu_loglog_per_point(
 
         intercept = intercepts[rank]
 
-        # -------------------------------------------------
+    
         # Création de la figure
-        # -------------------------------------------------
 
         fig, ax = plt.subplots(
             figsize=(7, 5)
         )
 
-        # -------------------------------------------------
         # Données mesurées
-        # -------------------------------------------------
-
         ax.loglog(
             scales[valid_mask],
             v[valid_mask],
@@ -647,9 +552,7 @@ def plot_nu_loglog_per_point(
             label="ν(p,t) mesuré"
         )
 
-        # -------------------------------------------------
         # Droite de régression
-        # -------------------------------------------------
 
         if slope is not None:
 
@@ -672,9 +575,7 @@ def plot_nu_loglog_per_point(
                 label=f"fit : a = {slope:+.4f}"
             )
 
-        # -------------------------------------------------
         # Ligne verticale à l'échelle sélectionnée
-        # -------------------------------------------------
 
         ax.axvline(
             selected_scale,
@@ -687,9 +588,7 @@ def plot_nu_loglog_per_point(
             )
         )
 
-        # -------------------------------------------------
         # Axes
-        # -------------------------------------------------
 
         ax.set_xlabel(
             "échelle t (log)"
@@ -699,28 +598,20 @@ def plot_nu_loglog_per_point(
             "ν(p,t) (log)"
         )
 
-        # -------------------------------------------------
         # Titre
-        # -------------------------------------------------
-
         ax.set_title(
             f"{obj_name} — p{i:06d} "
             f"(τ={TAU[i, selected_scale_idx]:+.3f} "
             f"à t={selected_scale:.4f})"
         )
 
-        # -------------------------------------------------
         # Légende
-        # -------------------------------------------------
-
         ax.legend(
             fontsize=8,
             loc="best"
         )
 
-        # -------------------------------------------------
         # Grille
-        # -----------------------------------------------------
 
         ax.grid(
             True,
@@ -730,10 +621,7 @@ def plot_nu_loglog_per_point(
 
         fig.tight_layout()
 
-        # -------------------------------------------------
         # Sauvegarde
-        # -------------------------------------------------
-
         fig_path = os.path.join(
             output_folder,
             f"{obj_name}_p{i:06d}_"
@@ -754,16 +642,10 @@ def plot_nu_loglog_per_point(
     )
 
 
-# =========================================================
 # PROGRAMME PRINCIPAL
-# =========================================================
-
 def main():
 
-    # =====================================================
     # 1. CHOIX DU FICHIER OBJ
-    # =====================================================
-
     obj_name = select_obj_name()
 
     selected_file = obj_name + ".obj"
@@ -778,10 +660,7 @@ def main():
         f"{path}"
     )
 
-    # =====================================================
     # 2. CHARGEMENT + NETTOYAGE
-    # =====================================================
-
     vertices, faces, obj_normals = load_obj(
         path
     )
@@ -790,9 +669,7 @@ def main():
         vertices
     )
 
-    # =====================================================
     # 3. CONSTRUCTION DU NUAGE DE POINTS
-    # =====================================================
 
     pcd = build_point_cloud_with_normals(
         vertices,
@@ -806,9 +683,7 @@ def main():
         pcd
     )
 
-    # =====================================================
     # 4. VÉRIFICATION DU CACHE
-    # =====================================================
 
     if not notebook_exists(obj_name):
 
@@ -819,10 +694,7 @@ def main():
             f"(calcul GLS)."
         )
 
-    # =====================================================
     # 5. CHARGEMENT DU CACHE
-    # =====================================================
-
     print(
         f"\n[NOTEBOOK] Chargement du cache : "
         f"notebooks/{obj_name}"
@@ -832,34 +704,22 @@ def main():
         obj_name
     )
 
-    # -----------------------------------------------------
     # Échelles
-    # -----------------------------------------------------
-
     scales = np.asarray(
         results["scales"]
     )
 
-    # -----------------------------------------------------
     # TAU
-    # -----------------------------------------------------
-
     TAU = np.asarray(
         results["TAU"]
     )
 
-    # -----------------------------------------------------
     # NU
-    # -----------------------------------------------------
-
     NU = np.asarray(
         results["NU"]
     )
 
-    # -----------------------------------------------------
     # KAPPA
-    # -----------------------------------------------------
-
     KAPPA = np.asarray(
         results["KAPPA"]
     )
@@ -879,18 +739,12 @@ def main():
         f"{KAPPA.shape}"
     )
 
-    # =====================================================
     # 6. CHOIX DE L'ÉCHELLE
-    # =====================================================
-
     selected_scale_idx, selected_scale = select_scale(
         scales
     )
 
-    # =====================================================
     # 7. RECHERCHE DES POINTS À TAU MAXIMAL
-    # =====================================================
-
     top_idx = top_tau_points_at_scale(
         TAU=TAU,
         scale_idx=selected_scale_idx,
@@ -914,10 +768,8 @@ def main():
             f"{TAU[i, selected_scale_idx]:+.6f}"
         )
 
-        # -------------------------------------------------
-        # Coordonnées XYZ du point
-        # -------------------------------------------------
 
+        # Coordonnées XYZ du point
         x, y, z = vertices[i]
 
         print(
@@ -931,10 +783,7 @@ def main():
             f"       OBJ vertex = {i + 1}"
         )
 
-    # =====================================================
     # 8. VISUALISATION 3D
-    # =====================================================
-
     visualize_selected_points_open3d(
         vertices=vertices,
         top_idx=top_idx,
@@ -942,10 +791,7 @@ def main():
         selected_scale=selected_scale
     )
 
-    # =====================================================
     # 9. DOSSIER DE SORTIE
-    # =====================================================
-
     output_folder = os.path.join(
         OUTPUT_DIR,
         obj_name,
@@ -962,9 +808,7 @@ def main():
         f"{output_folder}"
     )
 
-    # =====================================================
     # 10. COURBES ν
-    # =====================================================
 
     plot_descriptor_curves(
         scales=scales,
@@ -980,9 +824,7 @@ def main():
         file_tag="nu"
     )
 
-    # =====================================================
     # 11. COURBES τ
-    # =====================================================
 
     plot_descriptor_curves(
         scales=scales,
@@ -998,9 +840,7 @@ def main():
         file_tag="tau"
     )
 
-    # =====================================================
     # 12. COURBES κ
-    # =====================================================
 
     plot_descriptor_curves(
         scales=scales,
@@ -1016,9 +856,7 @@ def main():
         file_tag="kappa"
     )
 
-    # =====================================================
     # 13. RÉGRESSION LOG-LOG DE ν
-    # =====================================================
 
     print(
         "\n[TAU-V] Régression log-log de ν(p,t) "
@@ -1048,9 +886,7 @@ def main():
             valid_mask
         )
 
-    # =====================================================
     # 14. AFFICHAGE DES RÉSULTATS
-    # =====================================================
 
     print("\n")
     print(
@@ -1081,9 +917,7 @@ def main():
         "-" * len(header)
     )
 
-    # =====================================================
     # 15. RAPPORT TEXTE
-    # =====================================================
 
     report_lines = [
 
@@ -1115,9 +949,7 @@ def main():
         "-" * len(header) + "\n"
     ]
 
-    # -----------------------------------------------------
     # Résultats individuels
-    # -----------------------------------------------------
 
     for rank, i in enumerate(
         top_idx,
@@ -1162,10 +994,7 @@ def main():
             f"{n_pts:>6d}\n"
         )
 
-    # =====================================================
     # 16. STATISTIQUES SUR LES PENTES
-    # =====================================================
-
     valid_slopes = np.array(
         [
             s
@@ -1227,9 +1056,7 @@ def main():
             f"{max_slope:+.6f}\n"
         )
 
-    # =====================================================
     # 17. SAUVEGARDE DU RAPPORT
-    # =====================================================
 
     report_path = os.path.join(
         output_folder,
@@ -1253,10 +1080,7 @@ def main():
         f"{report_path}"
     )
 
-    # =====================================================
     # 18. GRAPHES LOG-LOG INDIVIDUELS
-    # =====================================================
-
     plot_nu_loglog_per_point(
         scales=scales,
         NU=NU,
@@ -1271,9 +1095,7 @@ def main():
         valid_masks=valid_masks
     )
 
-    # =====================================================
     # 19. INTERPRÉTATION
-    # =====================================================
 
     print(
         "\n[INTERPRÉTATION]"
@@ -1319,9 +1141,7 @@ def main():
             "régression log-log."
         )
 
-    # =====================================================
     # 20. FIN
-    # =====================================================
 
     print("\n")
     print(
@@ -1347,10 +1167,6 @@ def main():
 
     plt.close("all")
 
-
-# =========================================================
-# ENTRY POINT
-# =========================================================
 
 if __name__ == "__main__":
     main()

@@ -1,30 +1,17 @@
 # analyse_roughness.py
 # =========================================================
-# Détection des points les plus RUGUEUX d'un nuage de points,
-# d'après les descripteurs GLS (Mellado et al. 2012) :
+# Détection des points les plus RUGUEUX d'un nuage de points
 #
-#   tau (τ)   : écart algébrique au fit local — grand |τ| = point
-#               qui s'écarte de la surface lisse ajustée
-#   kappa (κ) : courbure signée — grand |κ| = forte variation de forme
-#   phi (ϕ)   : fitness du fit ∈ [0,1] — ϕ bas = normales mal
-#               expliquées par un ajustement lisse (indice de bruit)
-#   nu (ν)    : variation géométrique (dérivée analytique en échelle)
-#               — grand ν = descripteur instable à cette échelle,
-#               donc structure locale non stable (bruit / rugosité)
+#   tau (τ)   : grand |τ| = point qui s'écarte de la surface lisse ajustée
+#   kappa (κ) : grand |κ| = forte variation de forme
+#   phi (ϕ)   : ϕ bas = normales mal expliquées par un ajustement lisse (indice de bruit)
+#   nu (ν)    : grand ν = descripteur instable à cette échelle, donc structure locale non stable (bruit / rugosité)
 #
 # Contrairement à main.py, ce script ne balaye PAS toutes les
 # échelles : tau/kappa/phi/nu sont tous calculés en UNE seule passe,
 # à une échelle de référence t_ref (fine), car nu(p,t) est déjà une
 # dérivée analytique en t (cf. src/gls.py, Section 4.2 Eq. 5) — un
 # seul t suffit donc pour capturer la rugosité locale.
-#
-# Score composite (z-scores, cf. rapport texte pour le détail) :
-#     score(p) = z(|tau|) + z(|kappa|) + z(1 - phi) + z(nu)
-#
-# Les N_TOP points de score maximal sont coloriés en ROUGE et
-# marqués par de petites sphères pour rester visibles malgré leur
-# faible nombre. Script autonome : aucun cache requis, séparé de
-# main.py / analyse_tau_v.py.
 # =========================================================
 
 import os
