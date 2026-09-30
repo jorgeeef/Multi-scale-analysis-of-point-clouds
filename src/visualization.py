@@ -22,34 +22,80 @@ import open3d as o3d
 
 def _scalar_to_color(values, val_min, val_max):
     """
-    Convertit un vecteur de scalaires en couleurs RGB linéaires.
-    
-        β = (val - val_min) / (val_max - val_min)
-        couleur = (β, 0, 1 - β)
-    
-    val_min → bleu (0, 0, 1)
-    val_max → rouge (1, 0, 0)
-    NaN → gris (0.5, 0.5, 0.5)
-    
-    Retourne np.ndarray (N, 3) avec valeurs ∈ [0, 1].
+    Convertit un vecteur de scalaires en couleurs RGB :
+        val_min → bleu
+        valeur médiane → jaune
+        val_max → rouge
+        NaN → gris
     """
-    n      = len(values)
+    n = len(values)
     colors = np.zeros((n, 3))
-    delta  = val_max - val_min
+
+    delta = val_max - val_min
 
     if delta < 1e-12:
         colors[:] = [0.5, 0.5, 0.5]
         return colors
 
-    betta            = (values - val_min) / delta
-    colors[:, 0]     = betta            # R = β
-    colors[:, 1]     = 0.0              # G = 0
-    colors[:, 2]     = 1.0 - betta      # B = 1 - β
+    beta = (values - val_min) / delta
+    beta = np.clip(beta, 0.0, 1.0)
 
-    nan_mask         = np.isnan(values)
+    # Bleu → Jaune
+    mask_low = beta <= 0.5
+    x = beta[mask_low] * 2.0
+
+    colors[mask_low, 0] = x          # R : 0 → 1
+    colors[mask_low, 1] = x          # G : 0 → 1
+    colors[mask_low, 2] = 1 - x       # B : 1
+
+    # Jaune → Rouge
+    mask_high = beta > 0.5
+    x = (beta[mask_high] - 0.5) * 2.0
+
+    colors[mask_high, 0] = 1.0       # R : 1
+    colors[mask_high, 1] = 1.0 - x   # G : 1 → 0
+    colors[mask_high, 2] = 0.0       # B : 0
+
+    # NaN → gris
+    nan_mask = np.isnan(values)
     colors[nan_mask] = [0.5, 0.5, 0.5]
 
-    return np.clip(colors, 0.0, 1.0)
+    return colors
+
+"""
+Second method of visualization using only blue and red.
+"""
+#def _scalar_to_color(values, val_min, val_max):
+#    """
+#    Convertit un vecteur de scalaires en couleurs RGB linéaires.
+#    
+#        β = (val - val_min) / (val_max - val_min)
+#        couleur = (β, 0, 1 - β)
+#    
+#    val_min → bleu (0, 0, 1)
+#    val_max → rouge (1, 0, 0)
+#    NaN → gris (0.5, 0.5, 0.5)
+#    
+#    Retourne np.ndarray (N, 3) avec valeurs ∈ [0, 1].
+#    """
+#   n      = len(values)
+#    colors = np.zeros((n, 3))
+#    delta  = val_max - val_min
+#
+#    if delta < 1e-12:
+#        colors[:] = [0.5, 0.5, 0.5]
+#        return colors
+#
+#    betta            = (values - val_min) / delta
+#    colors[:, 0]     = betta            # R = β
+#    colors[:, 1]     = 0.0              # G = 0
+#    colors[:, 2]     = 1.0 - betta      # B = 1 - β
+#
+#    nan_mask         = np.isnan(values)
+#    colors[nan_mask] = [0.5, 0.5, 0.5]
+#
+#    return np.clip(colors, 0.0, 1.0)
+
 
 def _render_colormap_loop(pcd, data_per_scale, scales, folder, file_prefix,
                           val_min, val_max, descriptor_label,
